@@ -3,27 +3,39 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
+import FeedPage from "./pages/FeedPage";
+import GradePage from "./pages/GradePage";
+import GymsPage from "./pages/GymsPage";
+import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* 인증 바깥 (전체화면) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+        {/* 인증 영역 (공통 레이아웃 셸 + 중첩 라우트) */}
         <Route
-          path="/profile"
           element={
             <ProtectedRoute>
-              <ProfilePage />
+              <AppLayout />
             </ProtectedRoute>
           }
-        />
-        {/* 기본 경로 → 프로필 (미인증 시 ProtectedRoute가 /login으로) */}
-        <Route path="/" element={<Navigate to="/profile" replace />} />
-        {/* 그 외 → 로그인 */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        >
+          <Route path="/feed" element={<FeedPage />} />
+          <Route path="/me/grade" element={<GradePage />} />
+          <Route path="/gyms" element={<GymsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
+
+        {/* 기본 경로 → 피드 (미인증 시 ProtectedRoute가 /login으로) */}
+        <Route path="/" element={<Navigate to="/feed" replace />} />
+        {/* 그 외 → 피드 */}
+        <Route path="*" element={<Navigate to="/feed" replace />} />
       </Routes>
     </BrowserRouter>
   );

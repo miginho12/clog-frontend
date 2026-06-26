@@ -17,7 +17,7 @@ export default function LoginPage() {
     try {
       const res = await localLogin({ email, password });
       saveTokens(res.access_token, res.refresh_token);
-      navigate("/profile");
+      navigate("/feed");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

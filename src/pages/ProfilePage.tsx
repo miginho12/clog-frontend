@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
         <p className="text-sm text-red-600">{error}</p>
       </div>
     );
@@ -37,7 +37,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
         <p className="text-sm text-gray-400">불러오는 중...</p>
       </div>
     );
@@ -46,8 +46,8 @@ export default function ProfilePage() {
   const initial = user.nickname.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8">
+    <div className="mx-auto max-w-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-8">
         {/* 아바타 */}
         <div className="flex flex-col items-center">
           {user.profile_image_url ? (

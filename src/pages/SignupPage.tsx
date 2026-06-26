@@ -18,7 +18,7 @@ export default function SignupPage() {
     try {
       const res = await signup({ email, password, nickname });
       saveTokens(res.access_token, res.refresh_token);
-      navigate("/profile");
+      navigate("/feed");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

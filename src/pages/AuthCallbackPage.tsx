@@ -23,7 +23,7 @@ export default function AuthCallbackPage() {
 
     if (accessToken && refreshToken) {
       saveTokens(accessToken, refreshToken);
-      navigate("/profile", { replace: true });
+      navigate("/feed", { replace: true });
     } else {
       setError("로그인 정보를 받지 못했습니다. 다시 시도해주세요.");
     }
