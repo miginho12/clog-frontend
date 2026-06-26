@@ -100,3 +100,53 @@ export async function getMe(): Promise<AuthUser> {
 export function kakaoLoginUrl(): string {
   return `${API_BASE_URL}/auth/kakao/login`;
 }
+
+// ── 그레이드 (구현 2~5) ──
+//
+// GET /me/grade?base_gym= : v_scale + color 두 트랙 산정 결과 (인증 필요)
+// GET /gym-grade-systems   : 짐 색체계 목록 (공개) — base_gym 드롭다운 옵션용
+
+export interface VScaleGrade {
+  comprehensive_score: number;
+  top_rating: number | null;
+  top_rating_label: string | null;
+  counted_logs: number;
+}
+
+export interface ColorGrade {
+  comprehensive_score: number;
+  base_gym: string | null;
+  top_rating_label: string | null;
+  counted_logs: number;
+}
+
+export interface MeGradeResponse {
+  v_scale: VScaleGrade;
+  color: ColorGrade;
+}
+
+export interface GymGradeSystem {
+  id: string;
+  gym_name: string;
+  color_order: string[];
+  is_official: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── 내 그레이드 조회 (인증 필요) ──
+export async function getMyGrade(baseGym?: string): Promise<MeGradeResponse> {
+  const token = getAccessToken();
+  const query = baseGym ? `?base_gym=${encodeURIComponent(baseGym)}` : "";
+  const res = await fetch(`${API_BASE_URL}/me/grade${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<MeGradeResponse>(res);
+}
+
+// ── 짐 색체계 목록 조회 (공개) ──
+export async function listGymGradeSystems(): Promise<GymGradeSystem[]> {
+  const res = await fetch(`${API_BASE_URL}/gym-grade-systems`);
+  return handleResponse<GymGradeSystem[]>(res);
+}
