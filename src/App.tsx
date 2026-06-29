@@ -29,6 +29,7 @@ export default function App() {
         >
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/feed/new" element={<FeedNewPage />} />
+        <Route path="/feed/edit/:id" element={<FeedNewPage />} />
           <Route path="/me/grade" element={<GradePage />} />
           <Route path="/gyms" element={<GymsPage />} />
           <Route path="/profile" element={<ProfilePage />} />

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   listClimbingLogs,
+  deleteClimbingLog,
   getMe,
   ApiError,
   type ClimbingLog,
@@ -40,6 +41,16 @@ export default function FeedPage() {
     },
     [navigate],
   );
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("이 기록을 삭제할까요? 되돌릴 수 없어요.")) return;
+    try {
+      await deleteClimbingLog(id);
+      setLogs((prev) => prev.filter((l) => l.id !== id));
+    } catch {
+      alert("삭제에 실패했습니다");
+    }
+  }
 
   useEffect(() => {
     getMe()
@@ -85,7 +96,12 @@ export default function FeedPage() {
 
       <div className="space-y-3">
         {logs.map((log) => (
-          <ClimbingLogCard key={log.id} log={log} mine={myId === log.user_id} />
+          <ClimbingLogCard
+            key={log.id}
+            log={log}
+            mine={myId === log.user_id}
+            onDelete={handleDelete}
+          />
         ))}
       </div>
 

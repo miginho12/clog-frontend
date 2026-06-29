@@ -241,6 +241,45 @@ export async function createClimbingLog(
   return handleResponse<ClimbingLog>(res);
 }
 
+// ── 단건 조회 (수정 폼 prefill 용) ──
+export async function getClimbingLog(id: string): Promise<ClimbingLog> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  return handleResponse<ClimbingLog>(res);
+}
+
+// ── 수정 (본인만, 인증) ──
+export async function updateClimbingLog(
+  id: string,
+  input: Partial<ClimbingLogCreateInput>,
+): Promise<ClimbingLog> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+  return handleResponse<ClimbingLog>(res);
+}
+
+// ── 삭제 (본인만, 인증) — 204 No Content ──
+export async function deleteClimbingLog(id: string): Promise<void> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    // 204 는 ok 라 통과, 그 외만 에러 파싱
+    return handleResponse<void>(res);
+  }
+}
+
 // ── 추천 카테고리 태그 (공개) ──
 export async function getSuggestedCategories(): Promise<string[]> {
   const res = await fetch(`${API_BASE_URL}/climbing-logs/meta/categories`);

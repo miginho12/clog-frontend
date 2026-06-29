@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ClimbingLog } from "../api/client";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 
@@ -13,10 +15,13 @@ function formatDate(d: string): string {
 export default function ClimbingLogCard({
   log,
   mine = false,
+  onDelete,
 }: {
   log: ClimbingLog;
   mine?: boolean;
+  onDelete?: (id: string) => void;
 }) {
+  const navigate = useNavigate();
   const isVScale = log.grade_system === "v_scale";
   const ci = isVScale ? null : colorInfo(log.grade_raw);
 
@@ -51,9 +56,27 @@ export default function ClimbingLogCard({
           )}
         </div>
         {mine && (
-          <span className="rounded-full bg-[#FAECE7] px-2 py-0.5 text-xs text-[#D85A30]">
-            내 기록
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-[#FAECE7] px-2 py-0.5 text-xs text-[#D85A30]">
+              내 기록
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/feed/edit/${log.id}`, { state: { log } })
+              }
+              className="text-xs text-gray-400 hover:text-gray-700"
+            >
+              수정
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete?.(log.id)}
+              className="text-xs text-gray-400 hover:text-red-600"
+            >
+              삭제
+            </button>
+          </div>
         )}
       </div>
 
@@ -68,11 +91,7 @@ export default function ClimbingLogCard({
       {log.media_url && (
         <div className="mt-3">
           {log.media_type === "video" ? (
-            <video
-              src={log.media_url}
-              controls
-              className="w-full rounded-lg border border-gray-200"
-            />
+            <AutoPlayVideo src={log.media_url} />
           ) : (
             <img
               src={log.media_url}
@@ -105,5 +124,40 @@ export default function ClimbingLogCard({
         </div>
       )}
     </div>
+  );
+}
+
+
+// 뷰포트에 보이면 자동재생, 벗어나면 정지 (인스타 스타일)
+function AutoPlayVideo({ src }: { src: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {}); // 자동재생 정책으로 막히면 무시
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.6 }, // 60% 이상 보일 때 재생
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={ref}
+      src={src}
+      muted
+      loop
+      playsInline
+      controls
+      className="w-full rounded-lg border border-gray-200"
+    />
   );
 }

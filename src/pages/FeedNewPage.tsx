@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { colorLabel } from "../lib/colorMap";
 import {
   createClimbingLog,
+  updateClimbingLog,
+  getClimbingLog,
   getSuggestedCategories,
   listGymGradeSystems,
   presignMedia,
   uploadToPresigned,
   ApiError,
+  type ClimbingLog,
   type GradeSystemType,
   type VisibilityType,
   type GymGradeSystem,
@@ -19,6 +22,11 @@ const today = () => new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
 export default function FeedNewPage() {
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const location = useLocation();
+  const isEdit = Boolean(editId);
+  // 피드에서 넘긴 log (있으면 prefill 즉시, 없으면 단건 GET 폴백)
+  const passedLog = (location.state as { log?: ClimbingLog } | null)?.log;
 
   const [gradeSystem, setGradeSystem] = useState<GradeSystemType>("v_scale");
   const [gradeRaw, setGradeRaw] = useState(""); // v_scale 텍스트 입력용
@@ -46,6 +54,39 @@ export default function FeedNewPage() {
     getSuggestedCategories().then(setSuggested).catch(() => {});
     listGymGradeSystems().then(setGyms).catch(() => {});
   }, []);
+
+  // 수정 모드: 기존 값으로 폼 채우기 (state 우선, 없으면 단건 GET)
+  useEffect(() => {
+    if (!isEdit || !editId) return;
+    const apply = (log: ClimbingLog) => {
+      setGradeSystem(log.grade_system as GradeSystemType);
+      if (log.grade_system === "v_scale") {
+        setGradeRaw(log.grade_raw);
+        setGymName(log.gym_name ?? "");
+      } else {
+        setGymName(log.gym_name ?? "");
+        setColorValue(log.grade_raw);
+      }
+      setIsSuccess(log.is_success);
+      setAttempts(log.attempts);
+      setClimbedAt(log.climbed_at);
+      setCategories(log.categories);
+      setComment(log.comment ?? "");
+      setVisibility(log.visibility as VisibilityType);
+      if (log.media_url) {
+        setMediaUrl(log.media_url);
+        setMediaType(log.media_type);
+      }
+    };
+    if (passedLog) {
+      apply(passedLog);
+    } else {
+      getClimbingLog(editId).then(apply).catch(() => {
+        setError("기록을 불러올 수 없습니다");
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, editId]);
 
   // 체계 전환 시 그레이드/짐 관련 입력 초기화 (표기 섞임 방지)
   function switchSystem(sys: GradeSystemType) {
@@ -163,7 +204,7 @@ export default function FeedNewPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await createClimbingLog({
+      const payload = {
         grade_raw: finalGradeRaw,
         grade_system: gradeSystem,
         gym_name: gymName.trim() || null,
@@ -175,7 +216,12 @@ export default function FeedNewPage() {
         visibility,
         media_url: mediaUrl,
         media_type: mediaType,
-      });
+      };
+      if (isEdit && editId) {
+        await updateClimbingLog(editId, payload);
+      } else {
+        await createClimbingLog(payload);
+      }
       navigate("/feed");
     } catch (err) {
       setError(
@@ -190,7 +236,7 @@ export default function FeedNewPage() {
   return (
     <div className="mx-auto max-w-xl space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium text-gray-900">기록하기</h1>
+        <h1 className="text-xl font-medium text-gray-900">{isEdit ? "기록 수정" : "기록하기"}</h1>
         <button
           onClick={() => navigate("/feed")}
           className="text-sm text-gray-500 hover:text-gray-900"
@@ -443,7 +489,7 @@ export default function FeedNewPage() {
           disabled={submitting || uploading}
           className="w-full rounded-lg bg-[#D85A30] py-3 text-sm font-medium text-white transition hover:bg-[#c14f29] disabled:opacity-50"
         >
-          {submitting ? "저장 중..." : uploading ? "업로드 중..." : "기록 저장"}
+          {submitting ? "저장 중..." : uploading ? "업로드 중..." : isEdit ? "수정 완료" : "기록 저장"}
         </button>
       </div>
     </div>
