@@ -150,3 +150,145 @@ export async function listGymGradeSystems(): Promise<GymGradeSystem[]> {
   const res = await fetch(`${API_BASE_URL}/gym-grade-systems`);
   return handleResponse<GymGradeSystem[]>(res);
 }
+
+// ── 클라이밍 로그 (피드 / 작성) ──
+//
+// GET  /climbing-logs            피드 (공개, 비로그인 허용 / 로그인 시 본인 private 포함)
+// POST /climbing-logs            작성 (인증)
+// GET  /climbing-logs/meta/categories  추천 카테고리 태그
+
+export type GradeSystemType = "v_scale" | "color";
+export type VisibilityType = "public" | "private";
+
+export interface ClimbingLog {
+  id: string;
+  user_id: string;
+  grade_raw: string;
+  grade_system: string;
+  gym_name: string | null;
+  categories: string[];
+  comment: string | null;
+  attempts: number;
+  is_success: boolean;
+  climbed_at: string; // date (YYYY-MM-DD)
+  media_type: string | null;
+  media_url: string | null;
+  visibility: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClimbingLogListResponse {
+  items: ClimbingLog[];
+  page: number;
+  page_size: number;
+  has_next: boolean;
+}
+
+export interface ClimbingLogCreateInput {
+  grade_raw: string;
+  grade_system: GradeSystemType;
+  gym_name?: string | null;
+  categories?: string[];
+  comment?: string | null;
+  attempts?: number;
+  is_success?: boolean;
+  climbed_at?: string | null; // null 이면 백엔드 기본(오늘)
+  visibility?: VisibilityType;
+  media_type?: string | null; // "image" | "video"
+  media_url?: string | null;
+}
+
+export interface FeedParams {
+  author_id?: string;
+  category?: string;
+  gym_name?: string;
+  grade_system?: GradeSystemType;
+  only_success?: boolean;
+  page?: number;
+  page_size?: number;
+}
+
+// ── 피드 조회 (공개 — 토큰 있으면 본인 private 포함) ──
+export async function listClimbingLogs(
+  params: FeedParams = {},
+): Promise<ClimbingLogListResponse> {
+  const token = getAccessToken();
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null) qs.set(k, String(v));
+  }
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await fetch(`${API_BASE_URL}/climbing-logs${query}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  return handleResponse<ClimbingLogListResponse>(res);
+}
+
+// ── 작성 (인증) ──
+export async function createClimbingLog(
+  input: ClimbingLogCreateInput,
+): Promise<ClimbingLog> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/climbing-logs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+  return handleResponse<ClimbingLog>(res);
+}
+
+// ── 추천 카테고리 태그 (공개) ──
+export async function getSuggestedCategories(): Promise<string[]> {
+  const res = await fetch(`${API_BASE_URL}/climbing-logs/meta/categories`);
+  return handleResponse<string[]>(res);
+}
+
+
+// ── 미디어 업로드 (presigned) ──
+//
+// POST /media/presign : presigned PUT URL 발급 (인증)
+// 흐름: presign 요청 → 받은 upload_url 로 파일 직접 PUT → public_url 을 기록에 저장
+
+export interface PresignResponse {
+  upload_url: string;
+  object_key: string;
+  public_url: string;
+  category: string; // "image" | "video"
+  expires_in: number;
+}
+
+// presigned URL 발급
+export async function presignMedia(
+  contentType: string,
+  filename?: string,
+): Promise<PresignResponse> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/media/presign`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ content_type: contentType, filename }),
+  });
+  return handleResponse<PresignResponse>(res);
+}
+
+// presigned URL 로 파일 직접 업로드 (PUT)
+export async function uploadToPresigned(
+  uploadUrl: string,
+  file: File,
+): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, `파일 업로드 실패 (${res.status})`, "upload_failed");
+  }
+}

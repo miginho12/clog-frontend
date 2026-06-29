@@ -4,6 +4,7 @@ import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
 import FeedPage from "./pages/FeedPage";
+import FeedNewPage from "./pages/FeedNewPage";
 import GradePage from "./pages/GradePage";
 import GymsPage from "./pages/GymsPage";
 import AppLayout from "./components/AppLayout";
@@ -27,6 +28,7 @@ export default function App() {
           }
         >
           <Route path="/feed" element={<FeedPage />} />
+          <Route path="/feed/new" element={<FeedNewPage />} />
           <Route path="/me/grade" element={<GradePage />} />
           <Route path="/gyms" element={<GymsPage />} />
           <Route path="/profile" element={<ProfilePage />} />

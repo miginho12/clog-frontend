@@ -9,6 +9,7 @@ import {
 } from "../api/client";
 import { clearTokens } from "../lib/auth";
 import ScoreGauge from "../components/ScoreGauge";
+import { colorInfo, colorLabel } from "../lib/colorMap";
 
 // 점수 게이지 정규화 기준 (difficulty 최대치 ~11 → 10 기준으로 채움 비율)
 const SCORE_MAX = 10;
@@ -36,8 +37,6 @@ export default function GradePage() {
 
   // 그레이드 조회 (baseGym 변경 시 재조회)
   useEffect(() => {
-    // 데이터 페칭 시작 시 로딩 on — 의도된 패턴 (재조회마다 로딩 표시)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
     getMyGrade(baseGym || undefined)
@@ -93,6 +92,8 @@ export default function GradePage() {
             ratingLabel={grade.color.top_rating_label}
             countedLogs={grade.color.counted_logs}
             gaugeColor={COLOR_COLOR}
+            colorTrack
+            baseGymName={grade.color.base_gym}
             footer={
               <div className="mt-4 border-t border-gray-100 pt-3">
                 <label className="mb-1.5 block text-xs text-gray-500">
@@ -128,6 +129,8 @@ function TrackCard({
   countedLogs,
   gaugeColor,
   footer,
+  colorTrack = false,
+  baseGymName = null,
 }: {
   title: string;
   subtitle: string;
@@ -136,24 +139,39 @@ function TrackCard({
   countedLogs: number;
   gaugeColor: string;
   footer?: React.ReactNode;
+  colorTrack?: boolean;
+  baseGymName?: string | null;
 }) {
   const empty = countedLogs === 0;
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-6">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-2">
         <div>
           <p className="text-sm font-medium text-gray-900">{title}</p>
           <p className="text-xs text-gray-400">{subtitle}</p>
         </div>
-        {ratingLabel && (
-          <span
-            className="rounded-full px-2.5 py-1 text-xs font-medium text-white"
-            style={{ backgroundColor: gaugeColor }}
-          >
-            최고 {ratingLabel}
-          </span>
-        )}
+        {ratingLabel &&
+          (colorTrack ? (
+            // color: 완등 최고 ratio 를 기준짐에 투영한 색 = 도전 가능 난이도
+            <span
+              className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium"
+              style={{
+                backgroundColor: colorInfo(ratingLabel).bg,
+                color: colorInfo(ratingLabel).fg,
+              }}
+              title={`완등 실력을 ${baseGymName ?? "기준짐"} 색으로 환산한 값`}
+            >
+              {colorLabel(ratingLabel)}
+            </span>
+          ) : (
+            <span
+              className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-white"
+              style={{ backgroundColor: gaugeColor }}
+            >
+              최고 {ratingLabel}
+            </span>
+          ))}
       </div>
 
       {empty ? (
@@ -174,6 +192,21 @@ function TrackCard({
           <p className="mt-2 text-xs text-gray-400">
             상위 {countedLogs}개 기록 반영
           </p>
+          {colorTrack && ratingLabel && (
+            <p className="mt-1 text-xs text-gray-500">
+              지금 도전 가능한 난이도는{" "}
+              <span
+                className="rounded px-1.5 py-0.5 font-medium"
+                style={{
+                  backgroundColor: colorInfo(ratingLabel).bg,
+                  color: colorInfo(ratingLabel).fg,
+                }}
+              >
+                {colorLabel(ratingLabel)}
+              </span>{" "}
+              수준이에요
+            </p>
+          )}
         </>
       )}
 
