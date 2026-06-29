@@ -8,6 +8,7 @@ import {
   type ClimbingLog,
 } from "../api/client";
 import ClimbingLogCard from "../components/ClimbingLogCard";
+import { isAuthenticated } from "../lib/auth";
 
 const PAGE_SIZE = 20;
 
@@ -68,12 +69,21 @@ export default function FeedPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-medium text-gray-900">피드</h1>
-        <Link
-          to="/feed/new"
-          className="rounded-lg bg-[#D85A30] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#c14f29]"
-        >
-          기록하기
-        </Link>
+        {isAuthenticated() ? (
+          <Link
+            to="/feed/new"
+            className="rounded-lg bg-[#D85A30] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#c14f29]"
+          >
+            기록하기
+          </Link>
+        ) : (
+          <Link
+            to="/login"
+            className="rounded-lg bg-[#D85A30] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#c14f29]"
+          >
+            로그인하고 기록하기
+          </Link>
+        )}
       </div>
 
       {error && (

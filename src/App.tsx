@@ -19,20 +19,52 @@ export default function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-        {/* 인증 영역 (공통 레이아웃 셸 + 중첩 라우트) */}
-        <Route
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
+        {/* 공통 레이아웃 셸 (비회원도 접근 — 피드/상세는 공개) */}
+        <Route element={<AppLayout />}>
+          {/* 공개: 피드 보기 */}
           <Route path="/feed" element={<FeedPage />} />
-          <Route path="/feed/new" element={<FeedNewPage />} />
-        <Route path="/feed/edit/:id" element={<FeedNewPage />} />
-          <Route path="/me/grade" element={<GradePage />} />
-          <Route path="/gyms" element={<GymsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+
+          {/* 보호: 작성/수정/내 정보 (비회원은 /login 으로) */}
+          <Route
+            path="/feed/new"
+            element={
+              <ProtectedRoute>
+                <FeedNewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feed/edit/:id"
+            element={
+              <ProtectedRoute>
+                <FeedNewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/me/grade"
+            element={
+              <ProtectedRoute>
+                <GradePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gyms"
+            element={
+              <ProtectedRoute>
+                <GymsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* 기본 경로 → 피드 (미인증 시 ProtectedRoute가 /login으로) */}
