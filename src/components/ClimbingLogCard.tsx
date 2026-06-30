@@ -27,6 +27,26 @@ export default function ClimbingLogCard({
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
+      {/* 작성자 */}
+      {log.author && (
+        <div className="mb-3 flex items-center gap-2">
+          {log.author.profile_image_url ? (
+            <img
+              src={log.author.profile_image_url}
+              alt={log.author.nickname}
+              className="h-7 w-7 rounded-full object-cover"
+            />
+          ) : (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
+              {log.author.nickname.slice(0, 1)}
+            </span>
+          )}
+          <span className="text-sm font-medium text-gray-800">
+            {log.author.nickname}
+          </span>
+        </div>
+      )}
+
       {/* 상단: 그레이드 배지 + 완등여부 + (내 글 표시) */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

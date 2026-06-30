@@ -160,9 +160,16 @@ export async function listGymGradeSystems(): Promise<GymGradeSystem[]> {
 export type GradeSystemType = "v_scale" | "color";
 export type VisibilityType = "public" | "private";
 
+export interface ClimbingLogAuthor {
+  id: string;
+  nickname: string;
+  profile_image_url: string | null;
+}
+
 export interface ClimbingLog {
   id: string;
   user_id: string;
+  author?: ClimbingLogAuthor | null;
   grade_raw: string;
   grade_system: string;
   gym_name: string | null;

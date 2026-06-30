@@ -1,16 +1,32 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMe, ApiError } from "../api/client";
+import {
+  getMe,
+  listClimbingLogs,
+  deleteClimbingLog,
+  ApiError,
+  type ClimbingLog,
+} from "../api/client";
 import { clearTokens, type AuthUser } from "../lib/auth";
+import ClimbingLogCard from "../components/ClimbingLogCard";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [myLogs, setMyLogs] = useState<ClimbingLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   useEffect(() => {
     getMe()
-      .then(setUser)
+      .then((u) => {
+        setUser(u);
+        // 내 게시물 로드 (author_id = 본인)
+        listClimbingLogs({ author_id: u.id, page_size: 50 })
+          .then((res) => setMyLogs(res.items))
+          .catch(() => {})
+          .finally(() => setLogsLoading(false));
+      })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) {
           // 토큰 만료/무효 → 로그인으로
@@ -25,6 +41,16 @@ export default function ProfilePage() {
   function handleLogout() {
     clearTokens();
     navigate("/login");
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("이 기록을 삭제할까요? 되돌릴 수 없어요.")) return;
+    try {
+      await deleteClimbingLog(id);
+      setMyLogs((prev) => prev.filter((l) => l.id !== id));
+    } catch {
+      alert("삭제에 실패했습니다");
+    }
   }
 
   if (error) {
@@ -46,8 +72,8 @@ export default function ProfilePage() {
   const initial = user.nickname.charAt(0).toUpperCase();
 
   return (
-    <div className="mx-auto max-w-sm">
-      <div className="rounded-2xl border border-gray-200 bg-white p-8">
+    <div className="mx-auto max-w-xl space-y-6">
+      <div className="mx-auto max-w-sm rounded-2xl border border-gray-200 bg-white p-8">
         {/* 아바타 */}
         <div className="flex flex-col items-center">
           {user.profile_image_url ? (
@@ -101,6 +127,35 @@ export default function ProfilePage() {
         >
           로그아웃
         </button>
+      </div>
+
+      {/* 내 기록 */}
+      <div>
+        <h2 className="mb-3 text-lg font-medium text-gray-900">내 기록</h2>
+        {logsLoading ? (
+          <p className="py-8 text-center text-sm text-gray-400">불러오는 중...</p>
+        ) : myLogs.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+            <p className="text-sm text-gray-500">아직 남긴 기록이 없어요.</p>
+            <button
+              onClick={() => navigate("/feed/new")}
+              className="mt-3 rounded-lg bg-[#D85A30] px-4 py-2 text-sm font-medium text-white"
+            >
+              첫 기록 남기기
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {myLogs.map((log) => (
+              <ClimbingLogCard
+                key={log.id}
+                log={log}
+                mine
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
