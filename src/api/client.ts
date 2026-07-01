@@ -96,6 +96,24 @@ export async function getMe(): Promise<AuthUser> {
   return handleResponse<AuthUser>(res);
 }
 
+// ── 공개 프로필 조회 (인증 필요, is_public=true 사용자만) ──
+// UserPublicResponse: 내 정보(AuthUser)와 달리 email/auth_provider 미포함
+export interface PublicUser {
+  id: string;
+  nickname: string;
+  profile_image_url: string | null;
+  bio: string | null;
+  is_public: boolean;
+}
+
+export async function getUser(userId: string): Promise<PublicUser> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  return handleResponse<PublicUser>(res);
+}
+
 // ── 카카오 로그인 시작 URL ──
 export function kakaoLoginUrl(): string {
   return `${API_BASE_URL}/auth/kakao/login`;

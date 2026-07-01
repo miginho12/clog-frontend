@@ -27,9 +27,12 @@ export default function ClimbingLogCard({
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
-      {/* 작성자 */}
+      {/* 작성자 (클릭 → 프로필) */}
       {log.author && (
-        <div className="mb-3 flex items-center gap-2">
+        <button
+          onClick={() => navigate(`/users/${log.author!.id}`)}
+          className="mb-3 flex items-center gap-2 transition hover:opacity-70"
+        >
           {log.author.profile_image_url ? (
             <img
               src={log.author.profile_image_url}
@@ -44,7 +47,7 @@ export default function ClimbingLogCard({
           <span className="text-sm font-medium text-gray-800">
             {log.author.nickname}
           </span>
-        </div>
+        </button>
       )}
 
       {/* 상단: 그레이드 배지 + 완등여부 + (내 글 표시) */}
