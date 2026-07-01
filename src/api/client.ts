@@ -382,3 +382,91 @@ export async function uploadToPresigned(
     throw new ApiError(res.status, `파일 업로드 실패 (${res.status})`, "upload_failed");
   }
 }
+
+// ── 댓글 (comments) ──
+
+export interface CommentAuthor {
+  id: string;
+  nickname: string;
+  profile_image_url: string | null;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  is_pinned: boolean;
+  parent_id: string | null;
+  author: CommentAuthor | null;
+  reply_count: number;
+  is_mine: boolean;
+  can_pin: boolean;
+}
+
+export interface CommentThread {
+  comment: Comment;
+  replies: Comment[];
+}
+
+export interface CommentListResponse {
+  items: CommentThread[];
+  total: number;
+}
+
+// 목록 (비로그인 허용 — 공개글)
+export async function listComments(
+  logId: string,
+): Promise<CommentListResponse> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/climbing-logs/${logId}/comments`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  return handleResponse<CommentListResponse>(res);
+}
+
+// 작성 (인증)
+export async function createComment(
+  logId: string,
+  content: string,
+  parentId?: string | null,
+): Promise<Comment> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/climbing-logs/${logId}/comments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ content, parent_id: parentId ?? null }),
+  });
+  return handleResponse<Comment>(res);
+}
+
+// 수정 (본인)
+export async function updateComment(
+  commentId: string,
+  content: string,
+): Promise<Comment> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ content }),
+  });
+  return handleResponse<Comment>(res);
+}
+
+// 삭제 (본인, soft)
+export async function deleteComment(commentId: string): Promise<void> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    return handleResponse<void>(res);
+  }
+}

@@ -4,6 +4,7 @@ import { getClimbingLog, ApiError, type ClimbingLog } from "../api/client";
 import { colorInfo } from "../lib/colorMap";
 import AutoPlayVideo from "../components/AutoPlayVideo";
 import LikeButton from "../components/LikeButton";
+import CommentSection from "../components/CommentSection";
 
 // 게시물 상세 (/feed/:id).
 // 큰 미디어(피드와 동일한 자동재생) + 작성자 + 정보 + 좋아요 + (댓글은 Phase 3).
@@ -168,8 +169,8 @@ export default function PostDetailPage() {
         )}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-dashed border-gray-300 bg-white px-5 py-8 text-center">
-        <p className="text-sm text-gray-400">댓글 기능은 준비 중이에요.</p>
+      <div className="mt-4">
+        <CommentSection logId={log.id} />
       </div>
     </div>
   );
