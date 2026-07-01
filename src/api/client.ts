@@ -201,6 +201,8 @@ export interface ClimbingLog {
   visibility: string;
   created_at: string;
   updated_at: string;
+  like_count: number;
+  liked_by_me: boolean;
 }
 
 export interface ClimbingLogListResponse {
@@ -303,6 +305,30 @@ export async function deleteClimbingLog(id: string): Promise<void> {
     // 204 는 ok 라 통과, 그 외만 에러 파싱
     return handleResponse<void>(res);
   }
+}
+
+// ── 좋아요 토글 (인증 필요) ──
+export interface LikeToggleResponse {
+  liked: boolean;
+  like_count: number;
+}
+
+export async function likePost(id: string): Promise<LikeToggleResponse> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}/like`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<LikeToggleResponse>(res);
+}
+
+export async function unlikePost(id: string): Promise<LikeToggleResponse> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}/like`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<LikeToggleResponse>(res);
 }
 
 // ── 추천 카테고리 태그 (공개) ──

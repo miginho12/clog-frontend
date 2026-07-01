@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import LikeButton from "./LikeButton";
 import { useNavigate } from "react-router-dom";
 import type { ClimbingLog } from "../api/client";
 import { colorInfo, colorLabel } from "../lib/colorMap";
@@ -125,6 +126,15 @@ export default function ClimbingLogCard({
           )}
         </div>
       )}
+
+      {/* 좋아요 */}
+      <div className="mt-3">
+        <LikeButton
+          logId={log.id}
+          initialCount={log.like_count}
+          initialLiked={log.liked_by_me}
+        />
+      </div>
 
       {/* 코멘트 */}
       {log.comment && (
