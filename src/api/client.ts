@@ -401,6 +401,8 @@ export interface Comment {
   reply_count: number;
   is_mine: boolean;
   can_pin: boolean;
+  like_count: number;
+  liked_by_me: boolean;
 }
 
 export interface CommentThread {
@@ -469,4 +471,28 @@ export async function deleteComment(commentId: string): Promise<void> {
   if (!res.ok) {
     return handleResponse<void>(res);
   }
+}
+
+// ── 댓글 좋아요 ──
+
+export async function likeComment(
+  commentId: string,
+): Promise<LikeToggleResponse> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/comments/${commentId}/like`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<LikeToggleResponse>(res);
+}
+
+export async function unlikeComment(
+  commentId: string,
+): Promise<LikeToggleResponse> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/comments/${commentId}/like`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<LikeToggleResponse>(res);
 }

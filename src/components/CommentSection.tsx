@@ -4,6 +4,8 @@ import {
   listComments,
   createComment,
   deleteComment,
+  likeComment,
+  unlikeComment,
   ApiError,
   type Comment,
   type CommentThread,
@@ -38,6 +40,36 @@ function CommentRow({
   isReply?: boolean;
 }) {
   const navigate = useNavigate();
+  const [liked, setLiked] = useState(c.liked_by_me);
+  const [likeCount, setLikeCount] = useState(c.like_count);
+  const [likePending, setLikePending] = useState(false);
+
+  async function toggleLike() {
+    if (!isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+    if (likePending) return;
+    const prevLiked = liked;
+    const prevCount = likeCount;
+    const next = !liked;
+    setLiked(next);
+    setLikeCount((n) => n + (next ? 1 : -1));
+    setLikePending(true);
+    try {
+      const res = next
+        ? await likeComment(c.id)
+        : await unlikeComment(c.id);
+      setLiked(res.liked);
+      setLikeCount(res.like_count);
+    } catch {
+      setLiked(prevLiked);
+      setLikeCount(prevCount);
+    } finally {
+      setLikePending(false);
+    }
+  }
+
   return (
     <div className={isReply ? "ml-10 mt-3" : "mt-4"}>
       <div className="flex gap-2.5">
@@ -75,6 +107,27 @@ function CommentRow({
           </div>
           <div className="mt-1 flex items-center gap-3 px-1 text-xs text-gray-400">
             <span>{timeAgo(c.created_at)}</span>
+            <button
+              onClick={toggleLike}
+              disabled={likePending}
+              className="flex items-center gap-1 font-medium hover:text-gray-600 disabled:opacity-60"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill={liked ? "#D85A30" : "none"}
+                stroke={liked ? "#D85A30" : "currentColor"}
+                strokeWidth="2.2"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              {likeCount > 0 && (
+                <span className={liked ? "text-[#D85A30]" : ""}>
+                  {likeCount}
+                </span>
+              )}
+            </button>
             {onReply && (
               <button
                 onClick={() => onReply(c)}
