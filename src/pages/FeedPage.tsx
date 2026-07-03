@@ -83,14 +83,27 @@ export default function FeedPage() {
     loadPage(1);
   }, [loadPage]);
 
-  // ?start=:postId 로 진입 시, 로드 완료 후 해당 카드로 스크롤 (1회)
+  // ?start=:postId 로 진입 시, 해당 카드로 즉시 이동 (움직임 안 보이게).
+  // 이미지/영상 로드로 레이아웃이 밀리므로, 로드 후 재보정을 여러 번 시도.
   useEffect(() => {
     if (!startId || scrolledTo === startId) return;
     const el = cardRefs.current[startId];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      setScrolledTo(startId);
-    }
+    if (!el) return;
+
+    // 즉시 1차 이동
+    el.scrollIntoView({ behavior: "auto", block: "start" });
+
+    // 이미지 로드로 밀리는 것 보정: 짧은 간격으로 여러 번 재이동
+    const timers = [50, 150, 350, 700].map((delay) =>
+      window.setTimeout(() => {
+        const target = cardRefs.current[startId];
+        if (target) {
+          target.scrollIntoView({ behavior: "auto", block: "start" });
+        }
+      }, delay),
+    );
+    setScrolledTo(startId);
+    return () => timers.forEach((t) => window.clearTimeout(t));
   }, [startId, scrolledTo, logs]);
 
   return (
