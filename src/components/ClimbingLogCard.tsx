@@ -2,7 +2,11 @@ import { useState } from "react";
 import LikeButton from "./LikeButton";
 import AutoPlayVideo from "./AutoPlayVideo";
 import { useNavigate } from "react-router-dom";
-import { createComment, type ClimbingLog } from "../api/client";
+import {
+  createComment,
+  type ClimbingLog,
+  type CommentPreview,
+} from "../api/client";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 import { isAuthenticated } from "../lib/auth";
 
@@ -26,6 +30,9 @@ export default function ClimbingLogCard({
 }) {
   const navigate = useNavigate();
   const [commentCount, setCommentCount] = useState(log.comment_count);
+  const [topComment, setTopComment] = useState<CommentPreview | null>(
+    log.top_comment,
+  );
   const [showInput, setShowInput] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -39,10 +46,20 @@ export default function ClimbingLogCard({
     if (!content || submitting) return;
     setSubmitting(true);
     try {
-      await createComment(log.id, content, null);
+      const created = await createComment(log.id, content, null);
       setCommentText("");
       setShowInput(false);
       setCommentCount((n) => n + 1);
+      // 미리보기 즉시 갱신: 기존 top 이 없으면 방금 작성한 걸로
+      if (!topComment) {
+        setTopComment({
+          id: created.id,
+          content: created.content,
+          like_count: 0,
+          reply_count: 0,
+          author: created.author,
+        });
+      }
     } catch {
       alert("댓글 작성에 실패했습니다");
     } finally {
@@ -154,13 +171,29 @@ export default function ClimbingLogCard({
         </div>
       )}
 
-      {/* 좋아요 */}
-      <div className="mt-3">
+      {/* 액션 바: 좋아요 + 댓글 아이콘 */}
+      <div className="mt-3 flex items-center gap-4">
         <LikeButton
           logId={log.id}
           initialCount={log.like_count}
           initialLiked={log.liked_by_me}
         />
+        <button
+          onClick={() => {
+            if (!isAuthenticated()) {
+              navigate("/login");
+              return;
+            }
+            setShowInput((v) => !v);
+          }}
+          className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-700"
+          aria-label="댓글 달기"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+          {commentCount > 0 && <span>{commentCount}</span>}
+        </button>
       </div>
 
       {/* 코멘트 */}
@@ -184,63 +217,71 @@ export default function ClimbingLogCard({
         </div>
       )}
 
-      {/* 댓글 미리보기 + 인라인 작성 (Phase 3c) */}
-      <div className="mt-3 border-t border-gray-100 pt-3">
-        {log.top_comment && (
-          <div className="text-sm">
-            <span className="font-medium text-gray-800">
-              {log.top_comment.author?.nickname ?? "알 수 없음"}
-            </span>{" "}
-            <span className="text-gray-700">{log.top_comment.content}</span>
-          </div>
-        )}
-        <div className="mt-1 flex items-center gap-3 text-sm text-gray-400">
-          {commentCount > 0 && (
-            <button
-              onClick={() => navigate(`/feed/${log.id}`)}
-              className="hover:text-gray-600"
-            >
-              댓글 {commentCount}개 모두 보기
-            </button>
-          )}
-          <button
-            onClick={() => {
-              if (!isAuthenticated()) {
-                navigate("/login");
-                return;
+      {/* 인라인 작성 입력창 */}
+      {showInput && (
+        <div className="mt-3 flex gap-2">
+          <input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                submitComment();
               }
-              setShowInput((v) => !v);
             }}
-            className="hover:text-gray-600"
+            autoFocus
+            placeholder="댓글 달기..."
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-[#D85A30]"
+          />
+          <button
+            onClick={submitComment}
+            disabled={submitting || !commentText.trim()}
+            className="rounded-lg bg-[#D85A30] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            댓글 달기
+            등록
           </button>
         </div>
+      )}
 
-        {showInput && (
-          <div className="mt-2 flex gap-2">
-            <input
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-                  submitComment();
-                }
-              }}
-              autoFocus
-              placeholder="댓글 달기..."
-              className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-[#D85A30]"
+      {/* 댓글 미리보기 (top 댓글 + 아바타 + 좋아요/대댓글 수) */}
+      {topComment && (
+        <button
+          onClick={() => navigate(`/feed/${log.id}`)}
+          className="mt-3 flex w-full items-start gap-2 border-t border-gray-100 pt-3 text-left"
+        >
+          {topComment.author?.profile_image_url ? (
+            <img
+              src={topComment.author.profile_image_url}
+              alt={topComment.author.nickname}
+              className="h-7 w-7 shrink-0 rounded-full object-cover"
             />
-            <button
-              onClick={submitComment}
-              disabled={submitting || !commentText.trim()}
-              className="rounded-lg bg-[#D85A30] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-            >
-              등록
-            </button>
+          ) : (
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
+              {topComment.author?.nickname.slice(0, 1) ?? "?"}
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="text-sm">
+              <span className="font-medium text-gray-800">
+                {topComment.author?.nickname ?? "알 수 없음"}
+              </span>{" "}
+              <span className="text-gray-700">{topComment.content}</span>
+            </div>
+            <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-400">
+              {topComment.like_count > 0 && (
+                <span>좋아요 {topComment.like_count}</span>
+              )}
+              {topComment.reply_count > 0 && (
+                <span>답글 {topComment.reply_count}</span>
+              )}
+              {commentCount > 1 && (
+                <span className="hover:text-gray-600">
+                  댓글 {commentCount}개 모두 보기
+                </span>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        </button>
+      )}
     </div>
   );
 }

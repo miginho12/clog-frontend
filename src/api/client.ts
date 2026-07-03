@@ -188,6 +188,7 @@ export interface CommentPreview {
   id: string;
   content: string;
   like_count: number;
+  reply_count: number;
   author: CommentAuthor | null;
 }
 
