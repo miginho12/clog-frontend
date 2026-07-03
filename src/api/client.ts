@@ -472,6 +472,22 @@ export async function updateComment(
 }
 
 // 삭제 (본인, soft)
+export async function setCommentPin(
+  commentId: string,
+  pinned: boolean,
+): Promise<Comment> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/comments/${commentId}/pin`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ pinned }),
+  });
+  return handleResponse<Comment>(res);
+}
+
 export async function deleteComment(commentId: string): Promise<void> {
   const token = getAccessToken();
   const res = await fetch(`${API_BASE_URL}/comments/${commentId}`, {

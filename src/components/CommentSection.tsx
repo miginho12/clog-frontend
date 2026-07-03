@@ -6,6 +6,7 @@ import {
   deleteComment,
   likeComment,
   unlikeComment,
+  setCommentPin,
   ApiError,
   type Comment,
   type CommentThread,
@@ -32,11 +33,13 @@ function CommentRow({
   c,
   onReply,
   onDelete,
+  onPin,
   isReply,
 }: {
   c: Comment;
   onReply?: (c: Comment) => void;
   onDelete: (id: string) => void;
+  onPin?: (c: Comment) => void;
   isReply?: boolean;
 }) {
   const navigate = useNavigate();
@@ -144,6 +147,22 @@ function CommentRow({
                 삭제
               </button>
             )}
+            {c.can_pin && !isReply && onPin && (
+              <button
+                onClick={() => onPin(c)}
+                className="font-medium hover:text-[#D85A30]"
+              >
+                {c.is_pinned ? "고정 해제" : "고정"}
+              </button>
+            )}
+            {c.can_pin && !isReply && onPin && (
+              <button
+                onClick={() => onPin(c)}
+                className="font-medium hover:text-[#D85A30]"
+              >
+                {c.is_pinned ? "고정 해제" : "고정"}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -214,6 +233,15 @@ export default function CommentSection({
     }
   }
 
+  async function handlePin(c: Comment) {
+    try {
+      await setCommentPin(c.id, !c.is_pinned);
+      await load(); // 고정 시 정렬이 바뀌므로 재조회
+    } catch {
+      alert("고정 처리에 실패했습니다");
+    }
+  }
+
   return (
     <div
       className={
@@ -238,6 +266,7 @@ export default function CommentSection({
                 c={t.comment}
                 onReply={setReplyTo}
                 onDelete={handleDelete}
+                onPin={handlePin}
               />
               {t.replies.map((r) => (
                 <CommentRow key={r.id} c={r} onDelete={handleDelete} isReply />
