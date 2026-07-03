@@ -10,11 +10,13 @@ import GradePage from "./pages/GradePage";
 import GymsPage from "./pages/GymsPage";
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { NavDirectionProvider } from "./lib/navDirection";
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <NavDirectionProvider>
+        <Routes>
         {/* 인증 바깥 (전체화면) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
@@ -82,7 +84,8 @@ export default function App() {
         <Route path="/" element={<Navigate to="/feed" replace />} />
         {/* 그 외 → 피드 */}
         <Route path="*" element={<Navigate to="/feed" replace />} />
-      </Routes>
+        </Routes>
+      </NavDirectionProvider>
     </BrowserRouter>
   );
 }

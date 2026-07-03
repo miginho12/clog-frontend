@@ -1,11 +1,13 @@
 import { useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   NavLink,
-  Outlet,
   useLocation,
   useNavigate,
+  useOutlet,
 } from "react-router-dom";
 import { isAuthenticated } from "../lib/auth";
+import { useNavDirection } from "../lib/navDirection";
 
 // 모바일 웹 규격 셸 (토스/무신사 스타일).
 // PC/모바일 동일 뷰: 고정 너비(max-w-md) 중앙 컨테이너.
@@ -21,6 +23,8 @@ const TABS = [
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const outlet = useOutlet();
+  const { getDirection, setDirection } = useNavDirection();
   const authed = isAuthenticated();
 
   // 좌우 스와이프로 탭 이동.
@@ -42,6 +46,7 @@ export default function AppLayout() {
   }
 
   function goByDelta(delta: number) {
+    setDirection(delta); // 애니메이션 방향
     // 게시물 생성 페이지에서 다음(오른→왼) 스와이프 → 피드 복귀
     if (location.pathname === "/feed/new") {
       if (delta > 0) navigate("/feed");
@@ -63,6 +68,15 @@ export default function AppLayout() {
       return;
     }
     navigate(to);
+  }
+
+  // 하단 탭바 클릭 시에도 방향 계산 (탭 순서 기준)
+  function onTabClick(targetTo: string) {
+    const from = currentIndex();
+    const to = SWIPE_ORDER.indexOf(targetTo);
+    if (from !== -1 && to !== -1) {
+      setDirection(to > from ? 1 : -1);
+    }
   }
 
   function onTouchStart(x: number, y: number) {
@@ -139,7 +153,7 @@ export default function AppLayout() {
 
         {/* 본문 (하단 탭바 높이만큼 패딩) */}
         <main
-          className="flex-1 px-4 py-6 pb-24"
+          className="relative flex-1 overflow-x-hidden"
           onTouchStart={(e) =>
             onTouchStart(e.touches[0].clientX, e.touches[0].clientY)
           }
@@ -147,7 +161,28 @@ export default function AppLayout() {
             onTouchEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
           }
         >
-          <Outlet />
+          <AnimatePresence initial={false} mode="popLayout" custom={getDirection()}>
+            <motion.div
+              key={location.pathname}
+              custom={getDirection()}
+              variants={{
+                enter: (dir: number) => ({
+                  x: dir > 0 ? "100%" : "-100%",
+                }),
+                center: { x: 0 },
+                exit: (dir: number) => ({
+                  x: dir > 0 ? "-100%" : "100%",
+                }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: "easeOut" }}
+              className="min-h-full px-4 py-6 pb-24"
+            >
+              {outlet}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* 하단 탭바 */}
@@ -172,22 +207,30 @@ export default function AppLayout() {
                   key={tab.to}
                   to={tab.to}
                   end={tab.to === "/feed"}
+                  onClick={() => onTabClick(tab.to)}
                   className="flex flex-1 flex-col items-center gap-0.5 py-2"
                 >
-                  {({ isActive }) => (
-                    <>
-                      <Icon active={isActive} />
-                      <span
-                        className={
-                          isActive
-                            ? "text-[11px] font-medium text-[#D85A30]"
-                            : "text-[11px] text-gray-400"
-                        }
-                      >
-                        {tab.label}
-                      </span>
-                    </>
-                  )}
+                  {({ isActive }) => {
+                    // 프로필은 /users/:id 로 리다이렉트되므로 currentIndex 로 보정
+                    const active =
+                      isActive ||
+                      (tab.to === "/profile" &&
+                        SWIPE_ORDER[currentIndex()] === "/profile");
+                    return (
+                      <>
+                        <Icon active={active} />
+                        <span
+                          className={
+                            active
+                              ? "text-[11px] font-medium text-[#D85A30]"
+                              : "text-[11px] text-gray-400"
+                          }
+                        >
+                          {tab.label}
+                        </span>
+                      </>
+                    );
+                  }}
                 </NavLink>
               );
             })}
