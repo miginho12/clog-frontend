@@ -31,6 +31,10 @@ export default function AppLayout() {
 
   function currentIndex(): number {
     const path = location.pathname;
+    // /users/:id (내 프로필로 리다이렉트된 경로, /posts 제외)은 프로필 탭으로 간주
+    if (/^\/users\/[^/]+$/.test(path)) {
+      return SWIPE_ORDER.indexOf("/profile");
+    }
     const idx = SWIPE_ORDER.findIndex((to) =>
       to === "/feed" ? path === "/feed" : path.startsWith(to),
     );
@@ -38,6 +42,11 @@ export default function AppLayout() {
   }
 
   function goByDelta(delta: number) {
+    // 게시물 생성 페이지에서 다음(오른→왼) 스와이프 → 피드 복귀
+    if (location.pathname === "/feed/new") {
+      if (delta > 0) navigate("/feed");
+      return;
+    }
     const idx = currentIndex();
     if (idx === -1) return; // 탭 화면이 아니면 스와이프 무시
     const target = idx + delta;
@@ -64,6 +73,8 @@ export default function AppLayout() {
     const dx = x - touchStart.current.x;
     const dy = y - touchStart.current.y;
     touchStart.current = null;
+    // 바텀시트 등 모달이 열려있으면(body 스크롤 잠금) 탭 스와이프 무시
+    if (document.body.style.overflow === "hidden") return;
     // 가로 이동이 세로보다 확실히 크고, 60px 이상일 때만
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     if (dx < 0) goByDelta(1); // 오른→왼 = 다음
