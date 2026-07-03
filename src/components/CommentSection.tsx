@@ -155,14 +155,6 @@ function CommentRow({
                 {c.is_pinned ? "고정 해제" : "고정"}
               </button>
             )}
-            {c.can_pin && !isReply && onPin && (
-              <button
-                onClick={() => onPin(c)}
-                className="font-medium hover:text-[#D85A30]"
-              >
-                {c.is_pinned ? "고정 해제" : "고정"}
-              </button>
-            )}
           </div>
         </div>
       </div>

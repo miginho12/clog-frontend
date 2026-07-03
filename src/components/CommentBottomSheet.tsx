@@ -7,7 +7,7 @@ import CommentSection from "./CommentSection";
 
 interface CommentBottomSheetProps {
   logId: string | null; // null 이면 닫힌 상태
-  onClose: () => void;
+  onClose: (closedLogId: string | null) => void;
 }
 
 export default function CommentBottomSheet({
@@ -38,7 +38,7 @@ export default function CommentBottomSheet({
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onClose(logId);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -49,7 +49,7 @@ export default function CommentBottomSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div
-        onClick={onClose}
+        onClick={() => onClose(logId)}
         className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
           visible ? "opacity-100" : "opacity-0"
         }`}
@@ -64,7 +64,7 @@ export default function CommentBottomSheet({
           <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-gray-300" />
           <span className="text-sm font-medium text-gray-900">댓글</span>
           <button
-            onClick={onClose}
+            onClick={() => onClose(logId)}
             className="flex h-6 w-6 items-center justify-center text-gray-400 hover:text-gray-600"
             aria-label="닫기"
           >

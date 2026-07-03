@@ -181,15 +181,14 @@ export default function FeedPage() {
 
       <CommentBottomSheet
         logId={sheetLogId}
-        onClose={async () => {
-          const closingId = sheetLogId;
+        onClose={async (closedLogId) => {
           setSheetLogId(null);
-          if (!closingId) return;
+          if (!closedLogId) return;
           // 시트에서 댓글이 바뀌었을 수 있으니 해당 카드만 갱신
           try {
-            const fresh = await getClimbingLog(closingId);
+            const fresh = await getClimbingLog(closedLogId);
             setLogs((prev) =>
-              prev.map((l) => (l.id === closingId ? fresh : l)),
+              prev.map((l) => (l.id === closedLogId ? fresh : l)),
             );
           } catch {
             // 갱신 실패는 조용히 (기존 카드 유지)
