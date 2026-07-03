@@ -8,6 +8,7 @@ import {
 import {
   listClimbingLogs,
   deleteClimbingLog,
+  getClimbingLog,
   getMe,
   ApiError,
   type ClimbingLog,
@@ -180,7 +181,20 @@ export default function FeedPage() {
 
       <CommentBottomSheet
         logId={sheetLogId}
-        onClose={() => setSheetLogId(null)}
+        onClose={async () => {
+          const closingId = sheetLogId;
+          setSheetLogId(null);
+          if (!closingId) return;
+          // 시트에서 댓글이 바뀌었을 수 있으니 해당 카드만 갱신
+          try {
+            const fresh = await getClimbingLog(closingId);
+            setLogs((prev) =>
+              prev.map((l) => (l.id === closingId ? fresh : l)),
+            );
+          } catch {
+            // 갱신 실패는 조용히 (기존 카드 유지)
+          }
+        }}
       />
     </div>
   );
