@@ -184,6 +184,13 @@ export interface ClimbingLogAuthor {
   profile_image_url: string | null;
 }
 
+export interface CommentPreview {
+  id: string;
+  content: string;
+  like_count: number;
+  author: CommentAuthor | null;
+}
+
 export interface ClimbingLog {
   id: string;
   user_id: string;
@@ -203,6 +210,8 @@ export interface ClimbingLog {
   updated_at: string;
   like_count: number;
   liked_by_me: boolean;
+  comment_count: number;
+  top_comment: CommentPreview | null;
 }
 
 export interface ClimbingLogListResponse {

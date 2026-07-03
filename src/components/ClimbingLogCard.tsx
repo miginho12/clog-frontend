@@ -1,8 +1,10 @@
+import { useState } from "react";
 import LikeButton from "./LikeButton";
 import AutoPlayVideo from "./AutoPlayVideo";
 import { useNavigate } from "react-router-dom";
-import type { ClimbingLog } from "../api/client";
+import { createComment, type ClimbingLog } from "../api/client";
 import { colorInfo, colorLabel } from "../lib/colorMap";
+import { isAuthenticated } from "../lib/auth";
 
 // 피드/목록의 단일 기록 카드.
 // 작성자 표시는 백엔드 author join 추가 후 (현재 미지원).
@@ -23,6 +25,31 @@ export default function ClimbingLogCard({
   onDelete?: (id: string) => void;
 }) {
   const navigate = useNavigate();
+  const [commentCount, setCommentCount] = useState(log.comment_count);
+  const [showInput, setShowInput] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submitComment() {
+    if (!isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+    const content = commentText.trim();
+    if (!content || submitting) return;
+    setSubmitting(true);
+    try {
+      await createComment(log.id, content, null);
+      setCommentText("");
+      setShowInput(false);
+      setCommentCount((n) => n + 1);
+    } catch {
+      alert("댓글 작성에 실패했습니다");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const isVScale = log.grade_system === "v_scale";
   const ci = isVScale ? null : colorInfo(log.grade_raw);
 
@@ -156,6 +183,64 @@ export default function ClimbingLogCard({
           ))}
         </div>
       )}
+
+      {/* 댓글 미리보기 + 인라인 작성 (Phase 3c) */}
+      <div className="mt-3 border-t border-gray-100 pt-3">
+        {log.top_comment && (
+          <div className="text-sm">
+            <span className="font-medium text-gray-800">
+              {log.top_comment.author?.nickname ?? "알 수 없음"}
+            </span>{" "}
+            <span className="text-gray-700">{log.top_comment.content}</span>
+          </div>
+        )}
+        <div className="mt-1 flex items-center gap-3 text-sm text-gray-400">
+          {commentCount > 0 && (
+            <button
+              onClick={() => navigate(`/feed/${log.id}`)}
+              className="hover:text-gray-600"
+            >
+              댓글 {commentCount}개 모두 보기
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (!isAuthenticated()) {
+                navigate("/login");
+                return;
+              }
+              setShowInput((v) => !v);
+            }}
+            className="hover:text-gray-600"
+          >
+            댓글 달기
+          </button>
+        </div>
+
+        {showInput && (
+          <div className="mt-2 flex gap-2">
+            <input
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  submitComment();
+                }
+              }}
+              autoFocus
+              placeholder="댓글 달기..."
+              className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-[#D85A30]"
+            />
+            <button
+              onClick={submitComment}
+              disabled={submitting || !commentText.trim()}
+              className="rounded-lg bg-[#D85A30] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            >
+              등록
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
