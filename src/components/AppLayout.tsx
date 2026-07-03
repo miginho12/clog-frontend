@@ -1,4 +1,10 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useRef } from "react";
+import {
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { isAuthenticated } from "../lib/auth";
 
 // 모바일 웹 규격 셸 (토스/무신사 스타일).
@@ -14,7 +20,55 @@ const TABS = [
 
 export default function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const authed = isAuthenticated();
+
+  // 좌우 스와이프로 탭 이동.
+  // 순서: [생성(-1)] 피드(0) → 그레이드(1) → 암장(2) → 프로필(3)
+  // 손가락 오른→왼(다음), 왼→오른(이전). 피드에서 이전 = 게시물 생성.
+  const SWIPE_ORDER = TABS.map((t) => t.to); // /feed, /me/grade, /gyms, /profile
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  function currentIndex(): number {
+    const path = location.pathname;
+    const idx = SWIPE_ORDER.findIndex((to) =>
+      to === "/feed" ? path === "/feed" : path.startsWith(to),
+    );
+    return idx;
+  }
+
+  function goByDelta(delta: number) {
+    const idx = currentIndex();
+    if (idx === -1) return; // 탭 화면이 아니면 스와이프 무시
+    const target = idx + delta;
+    if (target < 0) {
+      // 피드에서 이전(왼→오른) → 게시물 생성
+      if (idx === 0 && authed) navigate("/feed/new");
+      return;
+    }
+    if (target >= SWIPE_ORDER.length) return; // 마지막 탭 이후 없음
+    const to = SWIPE_ORDER[target];
+    const tab = TABS[target];
+    if (tab.auth && !authed) {
+      navigate("/login");
+      return;
+    }
+    navigate(to);
+  }
+
+  function onTouchStart(x: number, y: number) {
+    touchStart.current = { x, y };
+  }
+  function onTouchEnd(x: number, y: number) {
+    if (!touchStart.current) return;
+    const dx = x - touchStart.current.x;
+    const dy = y - touchStart.current.y;
+    touchStart.current = null;
+    // 가로 이동이 세로보다 확실히 크고, 60px 이상일 때만
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) goByDelta(1); // 오른→왼 = 다음
+    else goByDelta(-1); // 왼→오른 = 이전
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -73,7 +127,15 @@ export default function AppLayout() {
         </header>
 
         {/* 본문 (하단 탭바 높이만큼 패딩) */}
-        <main className="flex-1 px-4 py-6 pb-24">
+        <main
+          className="flex-1 px-4 py-6 pb-24"
+          onTouchStart={(e) =>
+            onTouchStart(e.touches[0].clientX, e.touches[0].clientY)
+          }
+          onTouchEnd={(e) =>
+            onTouchEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
+          }
+        >
           <Outlet />
         </main>
 
