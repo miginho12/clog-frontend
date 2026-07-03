@@ -33,57 +33,31 @@ export default function ClimbingLogCard({
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
-      {/* 작성자 (클릭 → 프로필) */}
-      {log.author && (
-        <button
-          onClick={() => navigate(`/users/${log.author!.id}`)}
-          className="mb-3 flex items-center gap-2 transition hover:opacity-70"
-        >
-          {log.author.profile_image_url ? (
-            <img
-              src={log.author.profile_image_url}
-              alt={log.author.nickname}
-              className="h-7 w-7 rounded-full object-cover"
-            />
-          ) : (
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
-              {log.author.nickname.slice(0, 1)}
-            </span>
-          )}
-          <span className="text-sm font-medium text-gray-800">
-            {log.author.nickname}
-          </span>
-        </button>
-      )}
-
-      {/* 상단: 그레이드 배지 + 완등여부 + (내 글 표시) */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className="rounded-lg px-2.5 py-1 text-sm font-medium"
-            style={
-              isVScale
-                ? { backgroundColor: "#D85A30", color: "#fff" }
-                : { backgroundColor: ci!.bg, color: ci!.fg }
-            }
+      {/* 작성자 헤더 (왼쪽) + 내 글 액션 (우상단) */}
+      <div className="mb-3 flex items-start justify-between">
+        {log.author ? (
+          <button
+            onClick={() => navigate(`/users/${log.author!.id}`)}
+            className="flex items-center gap-2 transition hover:opacity-70"
           >
-            {isVScale ? log.grade_raw : colorLabel(log.grade_raw)}
-          </span>
-          {log.is_success ? (
-            <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-              완등
+            {log.author.profile_image_url ? (
+              <img
+                src={log.author.profile_image_url}
+                alt={log.author.nickname}
+                className="h-7 w-7 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
+                {log.author.nickname.slice(0, 1)}
+              </span>
+            )}
+            <span className="text-sm font-medium text-gray-800">
+              {log.author.nickname}
             </span>
-          ) : (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-              시도
-            </span>
-          )}
-          {log.visibility === "private" && (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">
-              비공개
-            </span>
-          )}
-        </div>
+          </button>
+        ) : (
+          <div />
+        )}
         {mine && (
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-[#FAECE7] px-2 py-0.5 text-xs text-[#D85A30]">
@@ -106,6 +80,34 @@ export default function ClimbingLogCard({
               삭제
             </button>
           </div>
+        )}
+      </div>
+
+      {/* 상단: 그레이드 배지 + 완등여부 */}
+      <div className="flex items-center gap-2">
+        <span
+          className="rounded-lg px-2.5 py-1 text-sm font-medium"
+          style={
+            isVScale
+              ? { backgroundColor: "#D85A30", color: "#fff" }
+              : { backgroundColor: ci!.bg, color: ci!.fg }
+          }
+        >
+          {isVScale ? log.grade_raw : colorLabel(log.grade_raw)}
+        </span>
+        {log.is_success ? (
+          <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+            완등
+          </span>
+        ) : (
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+            시도
+          </span>
+        )}
+        {log.visibility === "private" && (
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">
+            비공개
+          </span>
         )}
       </div>
 
