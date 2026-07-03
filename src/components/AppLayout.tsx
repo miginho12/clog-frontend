@@ -45,6 +45,22 @@ export default function AppLayout() {
     return idx;
   }
 
+  // 애니메이션 key: 리다이렉트로 세부 경로가 바뀌어도 "같은 화면"이면 동일 key.
+  // (/profile → /users/:id 리다이렉트 시 이중 애니메이션 방지)
+  function screenKey(): string {
+    const path = location.pathname;
+    if (path === "/feed/new") return "feed-new";
+    // 필터 피드(사용자 게시물)는 별개 화면
+    if (/^\/users\/[^/]+\/posts/.test(path)) return "user-posts";
+    // 내 프로필(/profile 또는 /users/:id)은 하나의 화면으로
+    if (path === "/profile" || /^\/users\/[^/]+$/.test(path)) {
+      return "profile";
+    }
+    const idx = currentIndex();
+    if (idx !== -1) return "tab-" + idx;
+    return path;
+  }
+
   function goByDelta(delta: number) {
     setDirection(delta); // 애니메이션 방향
     // 게시물 생성 페이지에서 다음(오른→왼) 스와이프 → 피드 복귀
@@ -163,7 +179,7 @@ export default function AppLayout() {
         >
           <AnimatePresence initial={false} mode="popLayout" custom={getDirection()}>
             <motion.div
-              key={location.pathname}
+              key={screenKey()}
               custom={getDirection()}
               variants={{
                 enter: (dir: number) => ({
