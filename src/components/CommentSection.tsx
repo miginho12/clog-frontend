@@ -151,7 +151,13 @@ function CommentRow({
   );
 }
 
-export default function CommentSection({ logId }: { logId: string }) {
+export default function CommentSection({
+  logId,
+  bare = false,
+}: {
+  logId: string;
+  bare?: boolean;
+}) {
   const navigate = useNavigate();
   const [threads, setThreads] = useState<CommentThread[]>([]);
   const [total, setTotal] = useState(0);
@@ -209,7 +215,11 @@ export default function CommentSection({ logId }: { logId: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5">
+    <div
+      className={
+        bare ? "px-4 py-2" : "rounded-2xl border border-gray-200 bg-white p-5"
+      }
+    >
       <h2 className="text-sm font-medium text-gray-900">
         댓글 {total > 0 && <span className="text-gray-500">{total}</span>}
       </h2>

@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   listClimbingLogs,
   deleteClimbingLog,
@@ -8,25 +13,38 @@ import {
   type ClimbingLog,
 } from "../api/client";
 import ClimbingLogCard from "../components/ClimbingLogCard";
+import CommentBottomSheet from "../components/CommentBottomSheet";
 import { isAuthenticated } from "../lib/auth";
 
 const PAGE_SIZE = 20;
 
 export default function FeedPage() {
   const navigate = useNavigate();
+  // /users/:userId/posts 로 진입하면 그 사용자 게시물만 필터.
+  // ?start=:postId 있으면 로드 후 그 카드로 스크롤.
+  const { userId } = useParams<{ userId?: string }>();
+  const [searchParams] = useSearchParams();
+  const startId = searchParams.get("start");
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [scrolledTo, setScrolledTo] = useState<string | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
   const [logs, setLogs] = useState<ClimbingLog[]>([]);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sheetLogId, setSheetLogId] = useState<string | null>(null);
 
   const loadPage = useCallback(
     async (p: number) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await listClimbingLogs({ page: p, page_size: PAGE_SIZE });
+        const res = await listClimbingLogs({
+          page: p,
+          page_size: PAGE_SIZE,
+          author_id: userId,
+        });
         setLogs((prev) => (p === 1 ? res.items : [...prev, ...res.items]));
         setHasNext(res.has_next);
         setPage(res.page);
@@ -40,7 +58,7 @@ export default function FeedPage() {
         setLoading(false);
       }
     },
-    [navigate],
+    [navigate, userId],
   );
 
   async function handleDelete(id: string) {
@@ -65,10 +83,22 @@ export default function FeedPage() {
     loadPage(1);
   }, [loadPage]);
 
+  // ?start=:postId 로 진입 시, 로드 완료 후 해당 카드로 스크롤 (1회)
+  useEffect(() => {
+    if (!startId || scrolledTo === startId) return;
+    const el = cardRefs.current[startId];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setScrolledTo(startId);
+    }
+  }, [startId, scrolledTo, logs]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium text-gray-900">피드</h1>
+        <h1 className="text-xl font-medium text-gray-900">
+          {userId ? "게시물" : "피드"}
+        </h1>
         {isAuthenticated() ? (
           <Link
             to="/feed/new"
@@ -106,12 +136,19 @@ export default function FeedPage() {
 
       <div className="space-y-3">
         {logs.map((log) => (
-          <ClimbingLogCard
+          <div
             key={log.id}
-            log={log}
-            mine={myId === log.user_id}
-            onDelete={handleDelete}
-          />
+            ref={(el) => {
+              cardRefs.current[log.id] = el;
+            }}
+          >
+            <ClimbingLogCard
+              log={log}
+              mine={myId === log.user_id}
+              onDelete={handleDelete}
+              onOpenComments={setSheetLogId}
+            />
+          </div>
         ))}
       </div>
 
@@ -127,6 +164,11 @@ export default function FeedPage() {
           더 보기
         </button>
       )}
+
+      <CommentBottomSheet
+        logId={sheetLogId}
+        onClose={() => setSheetLogId(null)}
+      />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { colorInfo } from "../lib/colorMap";
 
 // 프로필용 3열 썸네일 그리드 (인스타식).
 // 미디어 있으면 이미지/영상 썸네일, 없으면 그레이드 색 타일.
-// 썸네일 클릭 → 게시물 상세(/feed/:id).
+// 썸네일 클릭 → 그 사용자 게시물 피드(/users/:userId/posts?start=:id).
 
 function GradeTile({ log }: { log: ClimbingLog }) {
   const isVScale = log.grade_system === "v_scale";
@@ -23,7 +23,13 @@ function GradeTile({ log }: { log: ClimbingLog }) {
   );
 }
 
-export default function PostGrid({ logs }: { logs: ClimbingLog[] }) {
+export default function PostGrid({
+  logs,
+  userId,
+}: {
+  logs: ClimbingLog[];
+  userId: string;
+}) {
   const navigate = useNavigate();
 
   if (logs.length === 0) {
@@ -39,7 +45,7 @@ export default function PostGrid({ logs }: { logs: ClimbingLog[] }) {
       {logs.map((log) => (
         <button
           key={log.id}
-          onClick={() => navigate(`/feed/${log.id}`)}
+          onClick={() => navigate(`/users/${userId}/posts?start=${log.id}`)}
           className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 transition hover:opacity-90"
         >
           {log.media_url ? (

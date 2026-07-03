@@ -185,7 +185,7 @@ export default function UserProfilePage() {
 
       <div>
         <h2 className="mb-3 text-sm font-medium text-gray-500">게시물</h2>
-        <PostGrid logs={logs} />
+        <PostGrid logs={logs} userId={id!} />
       </div>
     </div>
   );

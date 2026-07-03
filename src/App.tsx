@@ -6,7 +6,6 @@ import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
 import FeedPage from "./pages/FeedPage";
 import FeedNewPage from "./pages/FeedNewPage";
-import PostDetailPage from "./pages/PostDetailPage";
 import GradePage from "./pages/GradePage";
 import GymsPage from "./pages/GymsPage";
 import AppLayout from "./components/AppLayout";
@@ -44,7 +43,6 @@ export default function App() {
             }
           />
           {/* 공개: 게시물 상세 (비로그인도 공개글 조회 가능) */}
-          <Route path="/feed/:id" element={<PostDetailPage />} />
           <Route
             path="/me/grade"
             element={
@@ -69,6 +67,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/users/:userId/posts" element={<FeedPage />} />
           <Route
             path="/users/:id"
             element={
