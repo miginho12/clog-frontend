@@ -51,7 +51,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
   }
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-gray-200 bg-black">
+    <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-gray-200 bg-black">
       <video
         ref={ref}
         src={src}
@@ -65,7 +65,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
           const v = e.currentTarget;
           if (v.duration) setProgress((v.currentTime / v.duration) * 100);
         }}
-        className="w-full cursor-pointer"
+        className="h-full w-full cursor-pointer object-cover"
       />
 
       {!playing && (

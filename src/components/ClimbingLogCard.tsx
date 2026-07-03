@@ -116,18 +116,20 @@ export default function ClimbingLogCard({
         <span>시도 {log.attempts}회</span>
       </div>
 
-      {/* 미디어 (이미지/영상) */}
+      {/* 미디어 (이미지/영상) — 4:5 고정 규격 (로드 전에도 높이 확정) */}
       {log.media_url && (
         <div className="mt-3">
           {log.media_type === "video" ? (
             <AutoPlayVideo src={log.media_url} />
           ) : (
-            <img
-              src={log.media_url}
-              alt="기록 미디어"
-              loading="lazy"
-              className="max-h-96 w-full rounded-lg border border-gray-200 object-cover"
-            />
+            <div className="aspect-[4/5] w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+              <img
+                src={log.media_url}
+                alt="기록 미디어"
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            </div>
           )}
         </div>
       )}
