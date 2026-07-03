@@ -15,7 +15,6 @@ import {
 } from "../api/client";
 import ClimbingLogCard from "../components/ClimbingLogCard";
 import CommentBottomSheet from "../components/CommentBottomSheet";
-import { isAuthenticated } from "../lib/auth";
 
 const PAGE_SIZE = 20;
 
@@ -109,26 +108,21 @@ export default function FeedPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium text-gray-900">
-          {userId ? "게시물" : "피드"}
-        </h1>
-        {isAuthenticated() ? (
-          <Link
-            to="/feed/new"
-            className="rounded-lg bg-[#D85A30] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#c14f29]"
+      {/* 필터 피드(사용자 게시물)일 때만 뒤로가기 헤더. 전체 피드는 상단 헤더의 + 버튼 사용 */}
+      {userId && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 transition hover:bg-gray-100"
+            aria-label="뒤로"
           >
-            기록하기
-          </Link>
-        ) : (
-          <Link
-            to="/login"
-            className="rounded-lg bg-[#D85A30] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#c14f29]"
-          >
-            로그인하고 기록하기
-          </Link>
-        )}
-      </div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <h1 className="text-lg font-medium text-gray-900">게시물</h1>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">

@@ -69,7 +69,7 @@ export default function GradePage() {
       )}
 
       {grade && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           {/* ── v_scale 카드 ── */}
           <TrackCard
             title="V 스케일"

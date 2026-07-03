@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { clearTokens, isAuthenticated } from "../lib/auth";
+import { isAuthenticated } from "../lib/auth";
 
 // 모바일 웹 규격 셸 (토스/무신사 스타일).
 // PC/모바일 동일 뷰: 고정 너비(max-w-md) 중앙 컨테이너.
@@ -16,39 +16,59 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const authed = isAuthenticated();
 
-  function handleLogout() {
-    clearTokens();
-    navigate("/login", { replace: true });
-  }
-
   return (
     <div className="min-h-screen bg-gray-100">
       {/* 모바일 규격 컨테이너 (PC 에서 가운데 폰 화면) */}
       <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-gray-50 shadow-sm">
         {/* 상단 헤더 */}
         <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/90 backdrop-blur">
-          <div className="flex h-14 items-center justify-between px-4">
-            <NavLink to="/feed" className="flex items-center gap-1.5">
+          <div className="grid h-14 grid-cols-3 items-center px-4">
+            {/* 좌: 기록 추가 (+) */}
+            <div className="flex justify-start">
+              {authed ? (
+                <button
+                  onClick={() => navigate("/feed/new")}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-700 transition hover:bg-gray-100"
+                  aria-label="기록하기"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate("/login")}
+                  className="rounded-lg bg-[#D85A30] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#c14f29]"
+                >
+                  로그인
+                </button>
+              )}
+            </div>
+
+            {/* 중앙: 로고 */}
+            <NavLink to="/feed" className="flex items-center justify-center gap-1.5">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FAECE7] text-base">
                 🧗
               </span>
               <span className="text-lg font-medium text-gray-900">Clog</span>
             </NavLink>
-            {authed ? (
-              <button
-                onClick={handleLogout}
-                className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-50"
-              >
-                로그아웃
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate("/login")}
-                className="rounded-lg bg-[#D85A30] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#c14f29]"
-              >
-                로그인
-              </button>
-            )}
+
+            {/* 우: 알림 (준비 중) */}
+            <div className="flex justify-end">
+              {authed && (
+                <button
+                  onClick={() => {}}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100"
+                  aria-label="알림 (준비 중)"
+                  title="알림 (준비 중)"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.7 21a1.9 1.9 0 0 1-3.4 0" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         </header>
 

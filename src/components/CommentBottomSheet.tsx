@@ -56,7 +56,7 @@ export default function CommentBottomSheet({
       />
 
       <div
-        className={`relative flex max-h-[85vh] w-full max-w-xl flex-col rounded-t-2xl bg-white transition-transform duration-300 ${
+        className={`relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl bg-white transition-transform duration-300 ${
           visible ? "translate-y-0" : "translate-y-full"
         }`}
       >
