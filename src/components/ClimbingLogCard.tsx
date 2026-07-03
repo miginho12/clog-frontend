@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LikeButton from "./LikeButton";
 import AutoPlayVideo from "./AutoPlayVideo";
 import { useNavigate } from "react-router-dom";
@@ -26,8 +26,16 @@ export default function ClimbingLogCard({
   onOpenComments?: (logId: string) => void;
 }) {
   const navigate = useNavigate();
-  const [commentCount] = useState(log.comment_count);
-  const [topComment] = useState<CommentPreview | null>(log.top_comment);
+  const [commentCount, setCommentCount] = useState(log.comment_count);
+  const [topComment, setTopComment] = useState<CommentPreview | null>(
+    log.top_comment,
+  );
+
+  // 부모(FeedPage)가 log 를 갱신하면 미리보기/카운트 동기화
+  useEffect(() => {
+    setCommentCount(log.comment_count);
+    setTopComment(log.top_comment);
+  }, [log.comment_count, log.top_comment]);
   const isVScale = log.grade_system === "v_scale";
   const ci = isVScale ? null : colorInfo(log.grade_raw);
 
