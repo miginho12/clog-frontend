@@ -7,7 +7,13 @@
 // - kakaoLoginUrl: 카카오 OAuth 시작 URL
 
 import { API_BASE_URL } from "../config";
-import { getAccessToken, type AuthUser } from "../lib/auth";
+import {
+  clearTokens,
+  getAccessToken,
+  getRefreshToken,
+  saveTokens,
+  type AuthUser,
+} from "../lib/auth";
 
 // 백엔드 인증 응답 (signup, login 공통)
 export interface AuthResponse {
@@ -28,6 +34,73 @@ export class ApiError extends Error {
     this.status = status;
     this.code = code;
   }
+}
+
+// ── 토큰 자동 갱신 + 인증 요청 래퍼 ──
+
+// 진행 중인 갱신 Promise (동시 401 시 갱신 1회만 — 나머지는 이 결과를 공유)
+let refreshPromise: Promise<string> | null = null;
+
+async function doRefresh(): Promise<string> {
+  const refresh = getRefreshToken();
+  if (!refresh) {
+    clearTokens();
+    throw new ApiError(401, "no refresh token", "no_refresh");
+  }
+  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refresh }),
+  });
+  if (!res.ok) {
+    // refresh 자체가 만료/무효 → 재로그인 필요
+    clearTokens();
+    throw new ApiError(401, "refresh failed", "refresh_failed");
+  }
+  const data = (await res.json()) as { access_token: string };
+  // access 만 갱신 (refresh 는 유지)
+  const currentRefresh = getRefreshToken() ?? refresh;
+  saveTokens(data.access_token, currentRefresh);
+  return data.access_token;
+}
+
+function refreshAccessToken(): Promise<string> {
+  // 이미 갱신 중이면 그 Promise 재사용 (중복 갱신 방지)
+  if (refreshPromise === null) {
+    refreshPromise = doRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+// 인증 요청 래퍼: 401 이면 토큰 갱신 후 1회 재시도.
+// headersFactory 로 매번 최신 토큰을 헤더에 싣는다 (재시도 시 새 토큰 반영).
+async function authFetch(
+  url: string,
+  init: RequestInit = {},
+  headersFactory?: (token: string | null) => HeadersInit,
+): Promise<Response> {
+  const build = (): RequestInit => {
+    const token = getAccessToken();
+    const headers = headersFactory
+      ? headersFactory(token)
+      : token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+    return { ...init, headers: { ...headers, ...(init.headers ?? {}) } };
+  };
+
+  let res = await fetch(url, build());
+  if (res.status === 401 && getRefreshToken()) {
+    try {
+      await refreshAccessToken();
+      res = await fetch(url, build()); // 새 토큰으로 재시도
+    } catch {
+      // 갱신 실패 — 원래 401 응답 그대로 반환 (호출부에서 처리)
+    }
+  }
+  return res;
 }
 
 // 공통 응답 처리: 에러면 ApiError 던지기
@@ -89,10 +162,7 @@ export async function localLogin(params: {
 
 // ── 내 정보 조회 (인증 필요) ──
 export async function getMe(): Promise<AuthUser> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await authFetch(`${API_BASE_URL}/users/me`);
   return handleResponse<AuthUser>(res);
 }
 
@@ -107,10 +177,7 @@ export interface PublicUser {
 }
 
 export async function getUser(userId: string): Promise<PublicUser> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+  const res = await authFetch(`${API_BASE_URL}/users/${userId}`);
   return handleResponse<PublicUser>(res);
 }
 
@@ -155,11 +222,8 @@ export interface GymGradeSystem {
 
 // ── 내 그레이드 조회 (인증 필요) ──
 export async function getMyGrade(baseGym?: string): Promise<MeGradeResponse> {
-  const token = getAccessToken();
   const query = baseGym ? `?base_gym=${encodeURIComponent(baseGym)}` : "";
-  const res = await fetch(`${API_BASE_URL}/me/grade${query}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await authFetch(`${API_BASE_URL}/me/grade${query}`);
   return handleResponse<MeGradeResponse>(res);
 }
 
@@ -250,15 +314,12 @@ export interface FeedParams {
 export async function listClimbingLogs(
   params: FeedParams = {},
 ): Promise<ClimbingLogListResponse> {
-  const token = getAccessToken();
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null) qs.set(k, String(v));
   }
   const query = qs.toString() ? `?${qs.toString()}` : "";
-  const res = await fetch(`${API_BASE_URL}/climbing-logs${query}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+  const res = await authFetch(`${API_BASE_URL}/climbing-logs${query}`);
   return handleResponse<ClimbingLogListResponse>(res);
 }
 
@@ -266,24 +327,20 @@ export async function listClimbingLogs(
 export async function createClimbingLog(
   input: ClimbingLogCreateInput,
 ): Promise<ClimbingLog> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/climbing-logs`, {
-    method: "POST",
-    headers: {
+  const res = await authFetch(
+    `${API_BASE_URL}/climbing-logs`,
+    { method: "POST", body: JSON.stringify(input) },
+    (t) => ({
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(input),
-  });
+      Authorization: `Bearer ${t}`,
+    }),
+  );
   return handleResponse<ClimbingLog>(res);
 }
 
 // ── 단건 조회 (수정 폼 prefill 용) ──
 export async function getClimbingLog(id: string): Promise<ClimbingLog> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+  const res = await authFetch(`${API_BASE_URL}/climbing-logs/${id}`);
   return handleResponse<ClimbingLog>(res);
 }
 
@@ -292,24 +349,21 @@ export async function updateClimbingLog(
   id: string,
   input: Partial<ClimbingLogCreateInput>,
 ): Promise<ClimbingLog> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}`, {
-    method: "PATCH",
-    headers: {
+  const res = await authFetch(
+    `${API_BASE_URL}/climbing-logs/${id}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+    (t) => ({
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(input),
-  });
+      Authorization: `Bearer ${t}`,
+    }),
+  );
   return handleResponse<ClimbingLog>(res);
 }
 
 // ── 삭제 (본인만, 인증) — 204 No Content ──
 export async function deleteClimbingLog(id: string): Promise<void> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}`, {
+  const res = await authFetch(`${API_BASE_URL}/climbing-logs/${id}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
     // 204 는 ok 라 통과, 그 외만 에러 파싱
@@ -324,19 +378,15 @@ export interface LikeToggleResponse {
 }
 
 export async function likePost(id: string): Promise<LikeToggleResponse> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}/like`, {
+  const res = await authFetch(`${API_BASE_URL}/climbing-logs/${id}/like`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
   });
   return handleResponse<LikeToggleResponse>(res);
 }
 
 export async function unlikePost(id: string): Promise<LikeToggleResponse> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/climbing-logs/${id}/like`, {
+  const res = await authFetch(`${API_BASE_URL}/climbing-logs/${id}/like`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
   });
   return handleResponse<LikeToggleResponse>(res);
 }
@@ -366,15 +416,17 @@ export async function presignMedia(
   contentType: string,
   filename?: string,
 ): Promise<PresignResponse> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/media/presign`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const res = await authFetch(
+    `${API_BASE_URL}/media/presign`,
+    {
+      method: "POST",
+      body: JSON.stringify({ content_type: contentType, filename }),
     },
-    body: JSON.stringify({ content_type: contentType, filename }),
-  });
+    (t) => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${t}`,
+    }),
+  );
   return handleResponse<PresignResponse>(res);
 }
 
@@ -429,10 +481,9 @@ export interface CommentListResponse {
 export async function listComments(
   logId: string,
 ): Promise<CommentListResponse> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/climbing-logs/${logId}/comments`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+  const res = await authFetch(
+    `${API_BASE_URL}/climbing-logs/${logId}/comments`,
+  );
   return handleResponse<CommentListResponse>(res);
 }
 
@@ -442,15 +493,17 @@ export async function createComment(
   content: string,
   parentId?: string | null,
 ): Promise<Comment> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/climbing-logs/${logId}/comments`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const res = await authFetch(
+    `${API_BASE_URL}/climbing-logs/${logId}/comments`,
+    {
+      method: "POST",
+      body: JSON.stringify({ content, parent_id: parentId ?? null }),
     },
-    body: JSON.stringify({ content, parent_id: parentId ?? null }),
-  });
+    (t) => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${t}`,
+    }),
+  );
   return handleResponse<Comment>(res);
 }
 
@@ -459,15 +512,14 @@ export async function updateComment(
   commentId: string,
   content: string,
 ): Promise<Comment> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
-    method: "PATCH",
-    headers: {
+  const res = await authFetch(
+    `${API_BASE_URL}/comments/${commentId}`,
+    { method: "PATCH", body: JSON.stringify({ content }) },
+    (t) => ({
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ content }),
-  });
+      Authorization: `Bearer ${t}`,
+    }),
+  );
   return handleResponse<Comment>(res);
 }
 
@@ -476,23 +528,20 @@ export async function setCommentPin(
   commentId: string,
   pinned: boolean,
 ): Promise<Comment> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/comments/${commentId}/pin`, {
-    method: "PATCH",
-    headers: {
+  const res = await authFetch(
+    `${API_BASE_URL}/comments/${commentId}/pin`,
+    { method: "PATCH", body: JSON.stringify({ pinned }) },
+    (t) => ({
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ pinned }),
-  });
+      Authorization: `Bearer ${t}`,
+    }),
+  );
   return handleResponse<Comment>(res);
 }
 
 export async function deleteComment(commentId: string): Promise<void> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+  const res = await authFetch(`${API_BASE_URL}/comments/${commentId}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
     return handleResponse<void>(res);
@@ -504,10 +553,8 @@ export async function deleteComment(commentId: string): Promise<void> {
 export async function likeComment(
   commentId: string,
 ): Promise<LikeToggleResponse> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/comments/${commentId}/like`, {
+  const res = await authFetch(`${API_BASE_URL}/comments/${commentId}/like`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
   });
   return handleResponse<LikeToggleResponse>(res);
 }
@@ -515,10 +562,8 @@ export async function likeComment(
 export async function unlikeComment(
   commentId: string,
 ): Promise<LikeToggleResponse> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/comments/${commentId}/like`, {
+  const res = await authFetch(`${API_BASE_URL}/comments/${commentId}/like`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
   });
   return handleResponse<LikeToggleResponse>(res);
 }
@@ -547,27 +592,19 @@ export interface NotificationListResponse {
 }
 
 export async function getNotifications(): Promise<NotificationListResponse> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/notifications`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await authFetch(`${API_BASE_URL}/notifications`);
   return handleResponse<NotificationListResponse>(res);
 }
 
 export async function getUnreadCount(): Promise<number> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/notifications/unread-count`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await authFetch(`${API_BASE_URL}/notifications/unread-count`);
   const data = await handleResponse<{ unread_count: number }>(res);
   return data.unread_count;
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
-  const token = getAccessToken();
-  const res = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+  const res = await authFetch(`${API_BASE_URL}/notifications/read-all`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new ApiError(res.status, "read-all failed");
 }
