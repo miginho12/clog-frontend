@@ -522,3 +522,52 @@ export async function unlikeComment(
   });
   return handleResponse<LikeToggleResponse>(res);
 }
+
+// ── 알림 (notifications) ──
+
+export interface NotificationActor {
+  id: string;
+  nickname: string;
+  profile_image_url: string | null;
+}
+
+export interface Notification {
+  id: string;
+  type: "post_like" | "post_comment" | "comment_reply";
+  climbing_log_id: string;
+  comment_id: string | null;
+  is_read: boolean;
+  created_at: string;
+  actor: NotificationActor | null;
+}
+
+export interface NotificationListResponse {
+  items: Notification[];
+  unread_count: number;
+}
+
+export async function getNotifications(): Promise<NotificationListResponse> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/notifications`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<NotificationListResponse>(res);
+}
+
+export async function getUnreadCount(): Promise<number> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/notifications/unread-count`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleResponse<{ unread_count: number }>(res);
+  return data.unread_count;
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, "read-all failed");
+}

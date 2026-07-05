@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   NavLink,
@@ -7,6 +7,7 @@ import {
   useOutlet,
 } from "react-router-dom";
 import { isAuthenticated } from "../lib/auth";
+import { getUnreadCount } from "../api/client";
 import { useNavDirection } from "../lib/navDirection";
 
 // 모바일 웹 규격 셸 (토스/무신사 스타일).
@@ -26,6 +27,29 @@ export default function AppLayout() {
   const outlet = useOutlet();
   const { getDirection, setDirection } = useNavDirection();
   const authed = isAuthenticated();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // 안읽은 알림 개수 (마운트 + 위치 변경 시 + 30초 폴링)
+  useEffect(() => {
+    if (!authed) {
+      setUnreadCount(0);
+      return;
+    }
+    let alive = true;
+    const fetchCount = () => {
+      getUnreadCount()
+        .then((c) => {
+          if (alive) setUnreadCount(c);
+        })
+        .catch(() => {});
+    };
+    fetchCount();
+    const timer = window.setInterval(fetchCount, 30000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [authed, location.pathname]);
 
   // 좌우 스와이프로 탭 이동.
   // 순서: [생성(-1)] 피드(0) → 그레이드(1) → 암장(2) → 프로필(3)
@@ -152,11 +176,15 @@ export default function AppLayout() {
             <div className="flex justify-end">
               {authed && (
                 <button
-                  onClick={() => {}}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100"
-                  aria-label="알림 (준비 중)"
-                  title="알림 (준비 중)"
+                  onClick={() => navigate("/notifications")}
+                  className="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 transition hover:bg-gray-100"
+                  aria-label="알림"
                 >
+                  {unreadCount > 0 && (
+                    <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D85A30] px-1 text-[10px] font-medium text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
                     <path d="M13.7 21a1.9 1.9 0 0 1-3.4 0" />

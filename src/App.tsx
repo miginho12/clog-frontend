@@ -5,6 +5,7 @@ import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
 import FeedPage from "./pages/FeedPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import FeedNewPage from "./pages/FeedNewPage";
 import GradePage from "./pages/GradePage";
 import GymsPage from "./pages/GymsPage";
@@ -26,6 +27,14 @@ export default function App() {
         <Route element={<AppLayout />}>
           {/* 공개: 피드 보기 */}
           <Route path="/feed" element={<FeedPage />} />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* 보호: 작성/수정/내 정보 (비회원은 /login 으로) */}
           <Route
