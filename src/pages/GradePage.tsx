@@ -29,6 +29,7 @@ export default function GradePage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeline, setTimeline] = useState<GradeTimelinePoint[]>([]);
+  const [weeks, setWeeks] = useState<number>(12); // 추이 조회 기간
 
   // 짐 목록 (base_gym 드롭다운 옵션) — 1회 로드
   useEffect(() => {
@@ -39,14 +40,14 @@ export default function GradePage() {
       });
   }, []);
 
-  // 성장 추이 (주별 종합 점수) — 1회 로드
+  // 성장 추이 (주별 종합 점수) — 기간(weeks) 변경 시 재조회
   useEffect(() => {
-    getMyGradeTimeline(12)
+    getMyGradeTimeline(weeks)
       .then(setTimeline)
       .catch(() => {
         // 추이 실패는 치명적이지 않음 (차트만 안 뜸)
       });
-  }, []);
+  }, [weeks]);
 
   // 그레이드 조회 (baseGym 변경 시 재조회)
   useEffect(() => {
@@ -67,9 +68,14 @@ export default function GradePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-medium text-gray-900">내 그레이드</h1>
 
-      {timeline.length > 0 && <GradeTrendChart data={timeline} />}
+      {timeline.length > 0 && (
+        <GradeTrendChart
+          data={timeline}
+          weeks={weeks}
+          onWeeksChange={setWeeks}
+        />
+      )}
 
       {error && (
         <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
@@ -85,15 +91,17 @@ export default function GradePage() {
 
       {grade && (
         <div className="grid gap-4">
-          {/* ── v_scale 카드 ── */}
-          <TrackCard
-            title="V 스케일"
-            subtitle="V0 ~ V17 표준 등급"
-            score={grade.v_scale.comprehensive_score}
-            ratingLabel={grade.v_scale.top_rating_label}
-            countedLogs={grade.v_scale.counted_logs}
-            gaugeColor={VSCALE_COLOR}
-          />
+          {/* ── v_scale 카드 (기록 있을 때만) ── */}
+          {grade.v_scale.counted_logs > 0 && (
+            <TrackCard
+              title="V 스케일"
+              subtitle="V0 ~ V17 표준 등급"
+              score={grade.v_scale.comprehensive_score}
+              ratingLabel={grade.v_scale.top_rating_label}
+              countedLogs={grade.v_scale.counted_logs}
+              gaugeColor={VSCALE_COLOR}
+            />
+          )}
 
           {/* ── color 카드 ── */}
           <TrackCard
