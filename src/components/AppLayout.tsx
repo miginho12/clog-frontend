@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import UploadBanner from "./UploadBanner";
 import {
   NavLink,
   useLocation,
@@ -230,6 +231,7 @@ export default function AppLayout() {
         </main>
 
         {/* 하단 탭바 */}
+        <UploadBanner />
         <nav className="sticky bottom-0 z-10 border-t border-gray-200 bg-white/95 backdrop-blur">
           <div className="flex items-stretch justify-around">
             {TABS.map((tab) => {

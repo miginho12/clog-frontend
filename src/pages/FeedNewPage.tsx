@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { colorLabel } from "../lib/colorMap";
+import { useUpload } from "../lib/upload";
 import {
   createClimbingLog,
   updateClimbingLog,
   getClimbingLog,
   getSuggestedCategories,
   listGymGradeSystems,
-  presignMedia,
-  uploadToPresigned,
   ApiError,
   type ClimbingLog,
   type GradeSystemType,
@@ -22,6 +21,7 @@ const today = () => new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
 export default function FeedNewPage() {
   const navigate = useNavigate();
+  const { startUpload } = useUpload();
   const { id: editId } = useParams<{ id: string }>();
   const location = useLocation();
   const isEdit = Boolean(editId);
@@ -48,7 +48,7 @@ export default function FeedNewPage() {
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<string | null>(null); // "image" | "video"
   const [mediaPreview, setMediaPreview] = useState<string | null>(null); // 로컬 미리보기 objectURL
-  const [uploading, setUploading] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null); // 선택 파일 (제출 시 백그라운드 업로드)
 
   useEffect(() => {
     getSuggestedCategories().then(setSuggested).catch(() => {});
@@ -149,24 +149,13 @@ export default function FeedNewPage() {
       }
     }
 
-    setUploading(true);
-    try {
-      const presign = await presignMedia(file.type, file.name);
-      await uploadToPresigned(presign.upload_url, file);
-      setMediaUrl(presign.public_url);
-      setMediaType(presign.category);
-      // 로컬 미리보기 (이미지만)
-      if (isImage) setMediaPreview(URL.createObjectURL(file));
-      else setMediaPreview(null);
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message || "파일 업로드에 실패했습니다"
-          : "파일 업로드에 실패했습니다",
-      );
-    } finally {
-      setUploading(false);
-    }
+    // 즉시 업로드하지 않고 파일만 보관 → 제출 시 백그라운드 업로드.
+    // (원본 업로드가 사용자를 붙잡지 않게 하기 위함)
+    setMediaFile(file);
+    setMediaType(isVideo ? "video" : "image");
+    // 로컬 미리보기 (이미지만)
+    if (isImage) setMediaPreview(URL.createObjectURL(file));
+    else setMediaPreview(null);
   }
 
   function removeMedia() {
@@ -201,19 +190,35 @@ export default function FeedNewPage() {
       finalGradeRaw = colorValue;
     }
 
+    const basePayload = {
+      grade_raw: finalGradeRaw,
+      grade_system: gradeSystem,
+      gym_name: gymName.trim() || null,
+      is_success: isSuccess,
+      attempts,
+      climbed_at: climbedAt || null,
+      categories,
+      comment: comment.trim() || null,
+      visibility,
+    };
+
+    // 신규 작성 + 새 파일 선택 → 백그라운드 업로드에 위임하고 즉시 피드로.
+    // 원본 업로드/게시가 전역 Provider 에서 진행되어 사용자는 자유롭게 이동.
+    if (!isEdit && mediaFile) {
+      startUpload(mediaFile, {
+        ...basePayload,
+        media_url: null, // Provider 가 업로드 후 채움
+        media_type: mediaType,
+      });
+      navigate("/feed");
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {
       const payload = {
-        grade_raw: finalGradeRaw,
-        grade_system: gradeSystem,
-        gym_name: gymName.trim() || null,
-        is_success: isSuccess,
-        attempts,
-        climbed_at: climbedAt || null,
-        categories,
-        comment: comment.trim() || null,
-        visibility,
+        ...basePayload,
         media_url: mediaUrl,
         media_type: mediaType,
       };
@@ -431,19 +436,13 @@ export default function FeedNewPage() {
             </div>
           ) : (
             <label
-              className={[
-                "flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-gray-300 px-4 py-8 text-sm transition",
-                uploading
-                  ? "cursor-not-allowed bg-gray-50 text-gray-400"
-                  : "text-gray-500 hover:border-[#D85A30] hover:text-[#D85A30]",
-              ].join(" ")}
+              className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-gray-300 px-4 py-8 text-sm text-gray-500 transition hover:border-[#D85A30] hover:text-[#D85A30]"
             >
-              {uploading ? "업로드 중..." : "+ 사진 또는 영상 추가"}
+              + 사진 또는 영상 추가
               <input
                 type="file"
                 accept="image/*,video/*"
                 onChange={handleFileSelect}
-                disabled={uploading}
                 className="hidden"
               />
             </label>
@@ -486,10 +485,10 @@ export default function FeedNewPage() {
 
         <button
           onClick={handleSubmit}
-          disabled={submitting || uploading}
+          disabled={submitting}
           className="w-full rounded-lg bg-[#D85A30] py-3 text-sm font-medium text-white transition hover:bg-[#c14f29] disabled:opacity-50"
         >
-          {submitting ? "저장 중..." : uploading ? "업로드 중..." : isEdit ? "수정 완료" : "기록 저장"}
+          {submitting ? "저장 중..." : isEdit ? "수정 완료" : "기록 저장"}
         </button>
       </div>
     </div>

@@ -12,11 +12,13 @@ import GymsPage from "./pages/GymsPage";
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { NavDirectionProvider } from "./lib/navDirection";
+import { UploadProvider } from "./lib/upload";
 
 export default function App() {
   return (
     <BrowserRouter>
       <NavDirectionProvider>
+        <UploadProvider>
         <Routes>
         {/* 인증 바깥 (전체화면) */}
         <Route path="/login" element={<LoginPage />} />
@@ -94,6 +96,7 @@ export default function App() {
         {/* 그 외 → 피드 */}
         <Route path="*" element={<Navigate to="/feed" replace />} />
         </Routes>
+        </UploadProvider>
       </NavDirectionProvider>
     </BrowserRouter>
   );

@@ -434,15 +434,32 @@ export async function presignMedia(
 export async function uploadToPresigned(
   uploadUrl: string,
   file: File,
+  onProgress?: (percent: number) => void,
 ): Promise<void> {
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
+  // XMLHttpRequest 사용: fetch 는 업로드 진행률(progress) 이벤트를 못 줌.
+  // 대용량 영상 업로드의 진행 상태를 백그라운드 배너에 표시하기 위함.
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", file.type);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(
+          new ApiError(xhr.status, `파일 업로드 실패 (${xhr.status})`, "upload_failed"),
+        );
+      }
+    };
+    xhr.onerror = () =>
+      reject(new ApiError(0, "네트워크 오류로 업로드 실패", "upload_failed"));
+    xhr.send(file);
   });
-  if (!res.ok) {
-    throw new ApiError(res.status, `파일 업로드 실패 (${res.status})`, "upload_failed");
-  }
 }
 
 // ── 댓글 (comments) ──
