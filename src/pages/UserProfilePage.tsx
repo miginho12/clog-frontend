@@ -12,7 +12,7 @@ import {
 } from "../api/client";
 import { clearTokens, isAuthenticated } from "../lib/auth";
 import PostGrid from "../components/PostGrid";
-import FollowButton from "../components/FollowButton";
+import FollowableAvatar from "../components/FollowableAvatar";
 
 // 공용 프로필 페이지 (/users/:id).
 // 내 프로필이면 수정/로그아웃, 남이면 (팔로우는 Phase 4) 표시만.
@@ -143,7 +143,18 @@ export default function UserProfilePage() {
     <div className="mx-auto max-w-xl space-y-6">
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center gap-5">
-          {profile.profile_image_url ? (
+          {!isMe && myId ? (
+            <FollowableAvatar
+              userId={profile.id}
+              nickname={profile.nickname}
+              profileImageUrl={profile.profile_image_url}
+              initialFollowing={isFollowing}
+              onChange={(following, count) => {
+                setIsFollowing(following);
+                setFollowerCount(count);
+              }}
+            />
+          ) : profile.profile_image_url ? (
             <img
               src={profile.profile_image_url}
               alt={profile.nickname}
@@ -210,25 +221,14 @@ export default function UserProfilePage() {
                 로그아웃
               </button>
             </>
-          ) : myId ? (
-            <div className="flex-1">
-              <FollowButton
-                userId={profile.id}
-                initialFollowing={isFollowing}
-                onChange={(following, count) => {
-                  setIsFollowing(following);
-                  setFollowerCount(count);
-                }}
-              />
-            </div>
-          ) : (
+          ) : !myId ? (
             <button
               onClick={() => navigate("/login")}
               className="h-[38px] flex-1 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
             >
               로그인하고 팔로우
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
