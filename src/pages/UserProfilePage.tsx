@@ -4,12 +4,15 @@ import {
   getMe,
   getUser,
   listClimbingLogs,
+  getFollowers,
+  getFollowing,
   ApiError,
   type ClimbingLog,
   type PublicUser,
 } from "../api/client";
 import { clearTokens, isAuthenticated } from "../lib/auth";
 import PostGrid from "../components/PostGrid";
+import FollowButton from "../components/FollowButton";
 
 // 공용 프로필 페이지 (/users/:id).
 // 내 프로필이면 수정/로그아웃, 남이면 (팔로우는 Phase 4) 표시만.
@@ -31,6 +34,10 @@ export default function UserProfilePage() {
   const [isMe, setIsMe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [myId, setMyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -52,6 +59,7 @@ export default function UserProfilePage() {
         const mine = me?.id === userId;
         if (cancelled) return;
         setIsMe(mine);
+        setMyId(me?.id ?? null);
 
         const p: ProfileView = mine
           ? {
@@ -70,6 +78,18 @@ export default function UserProfilePage() {
         });
         if (cancelled) return;
         setLogs(res.items);
+
+        // 팔로워/팔로잉 카운트 + 내 팔로우 여부
+        const [followers, following] = await Promise.all([
+          getFollowers(userId),
+          getFollowing(userId),
+        ]);
+        if (cancelled) return;
+        setFollowerCount(followers.total);
+        setFollowingCount(following.total);
+        if (me && !mine) {
+          setIsFollowing(followers.users.some((u) => u.id === me!.id));
+        }
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 404) {
@@ -146,6 +166,24 @@ export default function UserProfilePage() {
                 </span>{" "}
                 게시물
               </span>
+              <button
+                onClick={() => navigate(`/users/${profile.id}/followers`)}
+                className="transition hover:text-gray-900"
+              >
+                <span className="font-semibold text-gray-900">
+                  {followerCount}
+                </span>{" "}
+                팔로워
+              </button>
+              <button
+                onClick={() => navigate(`/users/${profile.id}/following`)}
+                className="transition hover:text-gray-900"
+              >
+                <span className="font-semibold text-gray-900">
+                  {followingCount}
+                </span>{" "}
+                팔로잉
+              </button>
             </div>
           </div>
         </div>
@@ -172,12 +210,23 @@ export default function UserProfilePage() {
                 로그아웃
               </button>
             </>
+          ) : myId ? (
+            <div className="flex-1">
+              <FollowButton
+                userId={profile.id}
+                initialFollowing={isFollowing}
+                onChange={(following, count) => {
+                  setIsFollowing(following);
+                  setFollowerCount(count);
+                }}
+              />
+            </div>
           ) : (
             <button
-              disabled
-              className="h-[38px] flex-1 rounded-lg bg-gray-100 text-sm font-medium text-gray-400"
+              onClick={() => navigate("/login")}
+              className="h-[38px] flex-1 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
             >
-              팔로우 (준비 중)
+              로그인하고 팔로우
             </button>
           )}
         </div>

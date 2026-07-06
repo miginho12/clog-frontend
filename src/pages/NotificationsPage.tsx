@@ -30,6 +30,14 @@ function actionText(type: Notification["type"]): string {
       return "님이 회원님의 게시물에 댓글을 남겼습니다.";
     case "comment_reply":
       return "님이 회원님의 댓글에 답글을 남겼습니다.";
+    case "follow":
+      return "님이 회원님을 팔로우했습니다.";
+    case "media_ready":
+      return "님의 영상 처리가 완료되었습니다.";
+    case "media_failed":
+      return "님의 영상 처리에 실패했습니다.";
+    default:
+      return "님의 새 알림이 있습니다.";
   }
 }
 
@@ -80,7 +88,13 @@ export default function NotificationsPage() {
         {items.map((n) => (
           <button
             key={n.id}
-            onClick={() => navigate(`/feed?start=${n.climbing_log_id}`)}
+            onClick={() =>
+              navigate(
+                n.type === "follow"
+                  ? `/users/${n.actor?.id}`
+                  : `/feed?start=${n.climbing_log_id}`,
+              )
+            }
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-gray-50 ${
               n.is_read ? "" : "bg-[#FAECE7]/40"
             }`}

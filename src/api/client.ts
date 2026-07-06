@@ -181,6 +181,60 @@ export async function getUser(userId: string): Promise<PublicUser> {
   return handleResponse<PublicUser>(res);
 }
 
+// ── 팔로우 ──
+export interface FollowToggleResponse {
+  following: boolean;
+  follower_count: number;
+}
+
+export interface FollowUserItem {
+  id: string;
+  nickname: string | null;
+  profile_image_url: string | null;
+  is_following: boolean;
+}
+
+export interface FollowListResponse {
+  users: FollowUserItem[];
+  total: number;
+}
+
+export async function followUser(
+  userId: string,
+): Promise<FollowToggleResponse> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/${userId}/follow`,
+    { method: "POST" },
+    (t) => ({ Authorization: `Bearer ${t}` }),
+  );
+  return handleResponse<FollowToggleResponse>(res);
+}
+
+export async function unfollowUser(
+  userId: string,
+): Promise<FollowToggleResponse> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/${userId}/follow`,
+    { method: "DELETE" },
+    (t) => ({ Authorization: `Bearer ${t}` }),
+  );
+  return handleResponse<FollowToggleResponse>(res);
+}
+
+export async function getFollowers(
+  userId: string,
+): Promise<FollowListResponse> {
+  const res = await authFetch(`${API_BASE_URL}/users/${userId}/followers`);
+  return handleResponse<FollowListResponse>(res);
+}
+
+export async function getFollowing(
+  userId: string,
+): Promise<FollowListResponse> {
+  const res = await authFetch(`${API_BASE_URL}/users/${userId}/following`);
+  return handleResponse<FollowListResponse>(res);
+}
+
 // ── 카카오 로그인 시작 URL ──
 export function kakaoLoginUrl(): string {
   return `${API_BASE_URL}/auth/kakao/login`;
@@ -611,7 +665,13 @@ export interface NotificationActor {
 
 export interface Notification {
   id: string;
-  type: "post_like" | "post_comment" | "comment_reply";
+  type:
+    | "post_like"
+    | "post_comment"
+    | "comment_reply"
+    | "media_ready"
+    | "media_failed"
+    | "follow";
   climbing_log_id: string;
   comment_id: string | null;
   is_read: boolean;

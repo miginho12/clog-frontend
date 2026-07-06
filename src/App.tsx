@@ -4,6 +4,7 @@ import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
+import FollowListPage from "./pages/FollowListPage";
 import FeedPage from "./pages/FeedPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import FeedNewPage from "./pages/FeedNewPage";
@@ -81,6 +82,14 @@ export default function App() {
             }
           />
           <Route path="/users/:userId/posts" element={<FeedPage />} />
+          <Route
+            path="/users/:id/followers"
+            element={<FollowListPage mode="followers" />}
+          />
+          <Route
+            path="/users/:id/following"
+            element={<FollowListPage mode="following" />}
+          />
           <Route
             path="/users/:id"
             element={
