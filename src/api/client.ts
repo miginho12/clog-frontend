@@ -221,6 +221,22 @@ export interface GymGradeSystem {
 }
 
 // ── 내 그레이드 조회 (인증 필요) ──
+export interface GradeTimelinePoint {
+  date: string; // YYYY-MM-DD
+  score: number;
+  count: number;
+}
+
+// GET /me/grade/timeline : 주별 종합 점수 추이 (인증 필요)
+export async function getMyGradeTimeline(
+  weeks = 12,
+): Promise<GradeTimelinePoint[]> {
+  const res = await authFetch(
+    `${API_BASE_URL}/me/grade/timeline?weeks=${weeks}`,
+  );
+  return handleResponse<GradeTimelinePoint[]>(res);
+}
+
 export async function getMyGrade(baseGym?: string): Promise<MeGradeResponse> {
   const query = baseGym ? `?base_gym=${encodeURIComponent(baseGym)}` : "";
   const res = await authFetch(`${API_BASE_URL}/me/grade${query}`);

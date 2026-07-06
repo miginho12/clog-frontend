@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getMyGrade,
+  getMyGradeTimeline,
   listGymGradeSystems,
   ApiError,
   type MeGradeResponse,
   type GymGradeSystem,
+  type GradeTimelinePoint,
 } from "../api/client";
 import { clearTokens } from "../lib/auth";
 import ScoreGauge from "../components/ScoreGauge";
+import GradeTrendChart from "../components/GradeTrendChart";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 
 // 점수 게이지 정규화 기준 (difficulty 최대치 ~11 → 10 기준으로 채움 비율)
@@ -25,6 +28,7 @@ export default function GradePage() {
   const [baseGym, setBaseGym] = useState<string>(""); // "" = 자동(최다기록)
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [timeline, setTimeline] = useState<GradeTimelinePoint[]>([]);
 
   // 짐 목록 (base_gym 드롭다운 옵션) — 1회 로드
   useEffect(() => {
@@ -32,6 +36,15 @@ export default function GradePage() {
       .then(setGyms)
       .catch(() => {
         // 짐 목록 실패는 치명적이지 않음 (드롭다운만 비게 됨)
+      });
+  }, []);
+
+  // 성장 추이 (주별 종합 점수) — 1회 로드
+  useEffect(() => {
+    getMyGradeTimeline(12)
+      .then(setTimeline)
+      .catch(() => {
+        // 추이 실패는 치명적이지 않음 (차트만 안 뜸)
       });
   }, []);
 
@@ -55,6 +68,8 @@ export default function GradePage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-medium text-gray-900">내 그레이드</h1>
+
+      {timeline.length > 0 && <GradeTrendChart data={timeline} />}
 
       {error && (
         <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
