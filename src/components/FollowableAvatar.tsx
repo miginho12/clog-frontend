@@ -48,7 +48,7 @@ export default function FollowableAvatar({
     <button
       onClick={toggle}
       disabled={loading}
-      className={`group relative shrink-0 transition-transform active:scale-95 ${
+      className={`group relative block h-20 w-20 shrink-0 transition-transform active:scale-95 ${
         loading ? "opacity-60" : ""
       }`}
       aria-label={following ? "팔로우 취소" : "팔로우"}

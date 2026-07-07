@@ -230,7 +230,7 @@ export default function UserProfilePage() {
               <div className="text-lg font-semibold text-[#D85A30]">
                 {stats.current_score.toFixed(1)}
               </div>
-              <div className="text-xs text-gray-500">실력 지수</div>
+              <div className="text-xs text-gray-500">현재 지수</div>
             </div>
             <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-center">
               {stats.top_grade ? (
@@ -252,11 +252,12 @@ export default function UserProfilePage() {
               ) : (
                 <div className="text-lg font-semibold text-gray-300">-</div>
               )}
-              <div className="mt-0.5 truncate text-xs text-gray-500">
-                {stats.top_grade_system === "color" && stats.top_grade_gym
-                  ? stats.top_grade_gym
-                  : "최고 등급"}
-              </div>
+              <div className="text-xs text-gray-500">최고 등급</div>
+              {stats.top_grade_system === "color" && stats.top_grade_gym && (
+                <div className="truncate text-[10px] text-gray-400">
+                  {stats.top_grade_gym}
+                </div>
+              )}
             </div>
           </div>
         )}
