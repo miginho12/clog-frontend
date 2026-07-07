@@ -6,13 +6,16 @@ import {
   listClimbingLogs,
   getFollowers,
   getFollowing,
+  getUserStats,
   ApiError,
   type ClimbingLog,
   type PublicUser,
+  type ProfileStats,
 } from "../api/client";
 import { clearTokens, isAuthenticated } from "../lib/auth";
 import PostGrid from "../components/PostGrid";
 import FollowableAvatar from "../components/FollowableAvatar";
+import { colorLabel, colorInfo } from "../lib/colorMap";
 
 // 공용 프로필 페이지 (/users/:id).
 // 내 프로필이면 수정/로그아웃, 남이면 (팔로우는 Phase 4) 표시만.
@@ -38,6 +41,7 @@ export default function UserProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [myId, setMyId] = useState<string | null>(null);
+  const [stats, setStats] = useState<ProfileStats | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -87,6 +91,14 @@ export default function UserProfilePage() {
         if (cancelled) return;
         setFollowerCount(followers.total);
         setFollowingCount(following.total);
+
+        // 클라이머 통계
+        try {
+          const st = await getUserStats(userId);
+          if (!cancelled) setStats(st);
+        } catch {
+          // 통계 실패는 치명적이지 않음
+        }
         if (me && !mine) {
           setIsFollowing(followers.users.some((u) => u.id === me!.id));
         }
@@ -203,6 +215,50 @@ export default function UserProfilePage() {
           <p className="mt-4 whitespace-pre-wrap text-sm text-gray-700">
             {profile.bio}
           </p>
+        )}
+
+        {/* 클라이머 통계 */}
+        {stats && stats.total_count > 0 && (
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-center">
+              <div className="text-lg font-semibold text-gray-900">
+                {stats.success_count}
+              </div>
+              <div className="text-xs text-gray-500">완등</div>
+            </div>
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-center">
+              <div className="text-lg font-semibold text-[#D85A30]">
+                {stats.current_score.toFixed(1)}
+              </div>
+              <div className="text-xs text-gray-500">실력 지수</div>
+            </div>
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-center">
+              {stats.top_grade ? (
+                stats.top_grade_system === "color" ? (
+                  <div className="flex items-center justify-center gap-1">
+                    <span
+                      className="inline-block h-3 w-3 rounded-full"
+                      style={{ backgroundColor: colorInfo(stats.top_grade).bg }}
+                    />
+                    <span className="text-sm font-semibold text-gray-900">
+                      {colorLabel(stats.top_grade)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-lg font-semibold text-gray-900">
+                    {stats.top_grade}
+                  </div>
+                )
+              ) : (
+                <div className="text-lg font-semibold text-gray-300">-</div>
+              )}
+              <div className="mt-0.5 truncate text-xs text-gray-500">
+                {stats.top_grade_system === "color" && stats.top_grade_gym
+                  ? stats.top_grade_gym
+                  : "최고 등급"}
+              </div>
+            </div>
+          </div>
         )}
 
         <div className="mt-5 flex gap-2">

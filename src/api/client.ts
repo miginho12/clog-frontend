@@ -235,6 +235,21 @@ export async function getFollowing(
   return handleResponse<FollowListResponse>(res);
 }
 
+// ── 프로필 통계 ──
+export interface ProfileStats {
+  success_count: number;
+  total_count: number;
+  current_score: number;
+  top_grade: string | null;
+  top_grade_gym: string | null;
+  top_grade_system: string; // "v_scale" | "color"
+}
+
+export async function getUserStats(userId: string): Promise<ProfileStats> {
+  const res = await authFetch(`${API_BASE_URL}/users/${userId}/stats`);
+  return handleResponse<ProfileStats>(res);
+}
+
 // ── 카카오 로그인 시작 URL ──
 export function kakaoLoginUrl(): string {
   return `${API_BASE_URL}/auth/kakao/login`;
