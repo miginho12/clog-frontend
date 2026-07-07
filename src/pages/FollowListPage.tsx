@@ -92,7 +92,9 @@ export default function FollowListPage({ mode }: Props) {
       ) : users.length === 0 ? (
         <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
           <p className="text-sm text-gray-400">
-            아직 {title}가 없어요
+            {mode === "followers"
+              ? "아직 팔로워가 없어요"
+              : "아직 팔로우한 클라이머가 없어요"}
           </p>
         </div>
       ) : (

@@ -45,15 +45,14 @@ export default function FollowableAvatar({
   }
 
   return (
-    <div className="flex shrink-0 flex-col items-center gap-1.5">
-      <button
-        onClick={toggle}
-        disabled={loading}
-        className={`group relative transition-transform active:scale-95 ${
-          loading ? "opacity-60" : ""
-        }`}
-        aria-label={following ? "팔로우 취소" : "팔로우"}
-      >
+    <button
+      onClick={toggle}
+      disabled={loading}
+      className={`group relative shrink-0 transition-transform active:scale-95 ${
+        loading ? "opacity-60" : ""
+      }`}
+      aria-label={following ? "팔로우 취소" : "팔로우"}
+    >
         <span
           className={`absolute -inset-1 rounded-full transition-opacity ${
             following ? "opacity-100" : "opacity-0"
@@ -79,14 +78,6 @@ export default function FollowableAvatar({
             {initial}
           </div>
         )}
-      </button>
-      <span
-        className={`text-[11px] transition-colors ${
-          following ? "font-medium text-[#D85A30]" : "text-gray-400"
-        }`}
-      >
-        {following ? "팔로잉 중" : "탭해서 팔로우"}
-      </span>
-    </div>
+    </button>
   );
 }
