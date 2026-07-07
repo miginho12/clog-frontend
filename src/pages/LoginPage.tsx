@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { localLogin, kakaoLoginUrl, ApiError } from "../api/client";
 import { saveTokens } from "../lib/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const verified = searchParams.get("verified");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,16 @@ export default function LoginPage() {
             placeholder="••••••••••••"
           />
 
+          {verified === "success" && (
+            <div className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+              ✅ 이메일 인증이 완료됐어요! 이제 로그인할 수 있어요.
+            </div>
+          )}
+          {verified === "failed" && (
+            <div className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              인증 링크가 만료되었거나 유효하지 않아요. 다시 시도해 주세요.
+            </div>
+          )}
           {error && (
             <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
               {error}

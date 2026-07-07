@@ -1,24 +1,22 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { signup, ApiError } from "../api/client";
-import { saveTokens } from "../lib/auth";
 
 export default function SignupPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const res = await signup({ email, password, nickname });
-      saveTokens(res.access_token, res.refresh_token);
-      navigate("/feed");
+      await signup({ email, password, nickname });
+      setSubmitted(true); // 인증 메일 안내 화면으로
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -28,6 +26,37 @@ export default function SignupPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#FAECE7] text-2xl">
+            📬
+          </div>
+          <h1 className="mt-4 text-lg font-medium text-gray-900">
+            인증 메일을 보냈어요
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            <span className="font-medium text-gray-700">{email}</span> 으로
+            <br />
+            인증 메일을 발송했어요.
+            <br />
+            메일함에서 인증을 완료하면 로그인할 수 있어요.
+          </p>
+          <p className="mt-3 text-xs text-gray-400">
+            메일이 안 보이면 스팸함도 확인해 주세요.
+          </p>
+          <Link
+            to="/login"
+            className="mt-6 inline-block w-full rounded-lg bg-[#D85A30] py-2.5 text-sm font-medium text-white transition hover:bg-[#c24d27]"
+          >
+            로그인 화면으로
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -133,18 +133,23 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 // ── 자체 회원가입 ──
+export interface SignupResponse {
+  message: string;
+  email: string;
+}
+
 export async function signup(params: {
   email: string;
   password: string;
   nickname: string;
   profile_image_url?: string;
-}): Promise<AuthResponse> {
+}): Promise<SignupResponse> {
   const res = await fetch(`${API_BASE_URL}/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
-  return handleResponse<AuthResponse>(res);
+  return handleResponse<SignupResponse>(res);
 }
 
 // ── 자체 로그인 ──
