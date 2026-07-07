@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import VerifyPage from "./pages/VerifyPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
@@ -24,6 +25,7 @@ export default function App() {
         {/* 인증 바깥 (전체화면) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/verify" element={<VerifyPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
         {/* 공통 레이아웃 셸 (비회원도 접근 — 피드/상세는 공개) */}

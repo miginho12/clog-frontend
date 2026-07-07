@@ -145,7 +145,7 @@ export default function AppLayout() {
           <div className="grid h-14 grid-cols-3 items-center px-4">
             {/* 좌: 기록 추가 (+) */}
             <div className="flex justify-start">
-              {authed ? (
+              {authed && (
                 <button
                   onClick={() => navigate("/feed/new")}
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-700 transition hover:bg-gray-100"
@@ -154,13 +154,6 @@ export default function AppLayout() {
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <path d="M12 5v14M5 12h14" />
                   </svg>
-                </button>
-              ) : (
-                <button
-                  onClick={() => navigate("/login")}
-                  className="rounded-lg bg-[#D85A30] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#c14f29]"
-                >
-                  로그인
                 </button>
               )}
             </div>

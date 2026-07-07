@@ -152,6 +152,15 @@ export async function signup(params: {
   return handleResponse<SignupResponse>(res);
 }
 
+export async function verifyEmail(
+  token: string,
+): Promise<{ verified: boolean }> {
+  const res = await fetch(
+    `${API_BASE_URL}/auth/verify?token=${encodeURIComponent(token)}`,
+  );
+  return handleResponse<{ verified: boolean }>(res);
+}
+
 // ── 자체 로그인 ──
 export async function localLogin(params: {
   email: string;
