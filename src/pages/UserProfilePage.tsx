@@ -232,33 +232,36 @@ export default function UserProfilePage() {
               </div>
               <div className="text-xs text-gray-500">현재 지수</div>
             </div>
-            <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-center">
-              {stats.top_grade ? (
-                stats.top_grade_system === "color" ? (
-                  <div className="flex items-center justify-center gap-1">
-                    <span
-                      className="inline-block h-3 w-3 rounded-full"
-                      style={{ backgroundColor: colorInfo(stats.top_grade).bg }}
-                    />
-                    <span className="text-sm font-semibold text-gray-900">
-                      {colorLabel(stats.top_grade)}
-                    </span>
+            {stats.top_grade && stats.top_grade_system === "color" ? (
+              <div
+                className="flex flex-col justify-center rounded-xl px-3 py-2.5 text-center"
+                style={{
+                  backgroundColor: colorInfo(stats.top_grade).bg,
+                  color: colorInfo(stats.top_grade).fg,
+                }}
+              >
+                <div className="text-[11px] opacity-80">최고 등급</div>
+                <div className="text-base font-bold">
+                  {colorLabel(stats.top_grade)}
+                </div>
+                {stats.top_grade_gym && (
+                  <div className="truncate text-[10px] opacity-70">
+                    {stats.top_grade_gym}
                   </div>
-                ) : (
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col justify-center rounded-xl bg-gray-50 px-3 py-2.5 text-center">
+                {stats.top_grade ? (
                   <div className="text-lg font-semibold text-gray-900">
                     {stats.top_grade}
                   </div>
-                )
-              ) : (
-                <div className="text-lg font-semibold text-gray-300">-</div>
-              )}
-              <div className="text-xs text-gray-500">최고 등급</div>
-              {stats.top_grade_system === "color" && stats.top_grade_gym && (
-                <div className="truncate text-[10px] text-gray-400">
-                  {stats.top_grade_gym}
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="text-lg font-semibold text-gray-300">-</div>
+                )}
+                <div className="text-xs text-gray-500">최고 등급</div>
+              </div>
+            )}
           </div>
         )}
 

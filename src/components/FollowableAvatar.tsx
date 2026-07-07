@@ -54,7 +54,7 @@ export default function FollowableAvatar({
       aria-label={following ? "팔로우 취소" : "팔로우"}
     >
         <span
-          className={`absolute -inset-1 rounded-full transition-opacity ${
+          className={`absolute inset-0 rounded-full transition-opacity ${
             following ? "opacity-100" : "opacity-0"
           }`}
           style={{
@@ -63,7 +63,7 @@ export default function FollowableAvatar({
           }}
         />
         <span
-          className={`absolute -inset-0.5 rounded-full bg-white transition-opacity ${
+          className={`absolute inset-[3px] rounded-full bg-white transition-opacity ${
             following ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -71,10 +71,14 @@ export default function FollowableAvatar({
           <img
             src={profileImageUrl}
             alt={nickname}
-            className="relative h-20 w-20 rounded-full object-cover"
+            className={`relative rounded-full object-cover transition-all ${
+              following ? "m-[6px] h-[68px] w-[68px]" : "h-20 w-20"
+            }`}
           />
         ) : (
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[#FAECE7] text-2xl font-medium text-[#D85A30]">
+          <div className={`relative flex items-center justify-center rounded-full bg-[#FAECE7] text-2xl font-medium text-[#D85A30] transition-all ${
+            following ? "m-[6px] h-[68px] w-[68px]" : "h-20 w-20"
+          }`}>
             {initial}
           </div>
         )}
