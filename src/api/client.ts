@@ -188,6 +188,7 @@ export interface PublicUser {
   profile_image_url: string | null;
   bio: string | null;
   is_public: boolean;
+  is_banned?: boolean; // admin 차단 UI 용
 }
 
 export async function getUser(userId: string): Promise<PublicUser> {

@@ -13,6 +13,8 @@ import GradePage from "./pages/GradePage";
 import GymsPage from "./pages/GymsPage";
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
+import AdminPage from "./pages/AdminPage";
 import { NavDirectionProvider } from "./lib/navDirection";
 import { UploadProvider } from "./lib/upload";
 
@@ -81,6 +83,14 @@ export default function App() {
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
             }
           />
           <Route path="/users/:userId/posts" element={<FeedPage />} />

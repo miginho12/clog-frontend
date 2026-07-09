@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
+  banUser,
   getMe,
   getUser,
+  unbanUser,
   listClimbingLogs,
   getFollowers,
   getFollowing,
@@ -13,6 +15,7 @@ import {
   type ProfileStats,
 } from "../api/client";
 import { clearTokens, isAuthenticated } from "../lib/auth";
+import { useCurrentUser } from "../lib/useCurrentUser";
 import PostGrid from "../components/PostGrid";
 import FollowableAvatar from "../components/FollowableAvatar";
 import { colorLabel, colorInfo } from "../lib/colorMap";
@@ -42,6 +45,9 @@ export default function UserProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [myId, setMyId] = useState<string | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
+  const { isAdmin } = useCurrentUser();
+  const [banned, setBanned] = useState(false);
+  const [banBusy, setBanBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -73,6 +79,7 @@ export default function UserProfilePage() {
               bio: me!.bio,
             }
           : await getUser(userId);
+        setBanned(!!(p as PublicUser).is_banned);
         if (cancelled) return;
         setProfile(p);
 
@@ -122,6 +129,22 @@ export default function UserProfilePage() {
     };
   }, [id, navigate]);
 
+
+  async function handleBanToggle() {
+    const verb = banned ? "차단 해제" : "차단";
+    if (!window.confirm(`${profile?.nickname} 님을 ${verb}할까요?`)) return;
+    setBanBusy(true);
+    try {
+      const res = banned
+        ? await unbanUser(profile!.id)
+        : await banUser(profile!.id);
+      setBanned(res.is_banned);
+    } catch {
+      alert(`${verb}에 실패했습니다`);
+    } finally {
+      setBanBusy(false);
+    }
+  }
   function handleLogout() {
     clearTokens();
     navigate("/login");
@@ -210,6 +233,33 @@ export default function UserProfilePage() {
             </div>
           </div>
         </div>
+
+        {isAdmin && !isMe && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3">
+            <p className="mb-2 text-[11px] font-medium text-red-700">
+              관리자 · 사용자 관리
+            </p>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-gray-600">
+                {banned
+                  ? "차단됨 — 로그인·활동이 모두 막혀 있습니다"
+                  : "정상 활동 중"}
+              </span>
+              <button
+                type="button"
+                onClick={handleBanToggle}
+                disabled={banBusy}
+                className={
+                  banned
+                    ? "shrink-0 rounded-lg bg-gray-600 px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                    : "shrink-0 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                }
+              >
+                {banBusy ? "처리 중…" : banned ? "차단 해제" : "차단"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {profile.bio && (
           <p className="mt-4 whitespace-pre-wrap text-sm text-gray-700">
