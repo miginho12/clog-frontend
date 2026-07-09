@@ -769,7 +769,7 @@ export interface Notification {
     | "media_ready"
     | "media_failed"
     | "follow";
-  climbing_log_id: string;
+  climbing_log_id: string | null; // follow 알림은 게시물이 없다
   comment_id: string | null;
   is_read: boolean;
   created_at: string;

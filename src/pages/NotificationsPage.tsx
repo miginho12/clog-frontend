@@ -45,6 +45,7 @@ export default function NotificationsPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -57,7 +58,7 @@ export default function NotificationsPage() {
           markAllNotificationsRead().catch(() => {});
         }
       } catch {
-        // 조용히
+        if (alive) setError(true);
       } finally {
         if (alive) setLoading(false);
       }
@@ -70,6 +71,20 @@ export default function NotificationsPage() {
   if (loading) {
     return (
       <p className="py-10 text-center text-sm text-gray-400">불러오는 중...</p>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-16 text-center">
+        <p className="text-sm text-red-600">알림을 불러오지 못했습니다.</p>
+        <button
+          onClick={() => location.reload()}
+          className="mt-3 text-xs text-gray-500 underline"
+        >
+          다시 시도
+        </button>
+      </div>
     );
   }
 
@@ -90,7 +105,7 @@ export default function NotificationsPage() {
             key={n.id}
             onClick={() =>
               navigate(
-                n.type === "follow"
+                n.type === "follow" || !n.climbing_log_id
                   ? `/users/${n.actor?.id}`
                   : `/feed?start=${n.climbing_log_id}`,
               )
