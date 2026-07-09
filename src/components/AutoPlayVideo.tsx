@@ -8,6 +8,8 @@ export default function AutoPlayVideo({ src }: { src: string }) {
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0); // 0~100
   // 뷰포트 근처에 오기 전에는 src 를 붙이지 않는다.
+  // src 가 붙으면 preload=metadata 로 첫 프레임만 받아 포스터를 그린다
+  // (preload=none 은 검은 화면이 됨. 썸네일 파이프라인이 생기면 poster 로 대체).
   // 붙이는 순간 브라우저가 메타데이터를 받아오므로, 화면 밖 영상까지
   // 동시에 요청하면 프록시가 버티지 못한다 (nginx 버퍼 고갈 → 503).
   const [shouldLoad, setShouldLoad] = useState(false);
@@ -76,7 +78,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
       <video
         ref={ref}
         src={shouldLoad ? src : undefined}
-        preload="none"
+        preload="metadata"
         muted={muted}
         loop
         playsInline
