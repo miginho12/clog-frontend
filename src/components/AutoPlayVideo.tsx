@@ -7,11 +7,32 @@ export default function AutoPlayVideo({ src }: { src: string }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0); // 0~100
+  // 뷰포트 근처에 오기 전에는 src 를 붙이지 않는다.
+  // 붙이는 순간 브라우저가 메타데이터를 받아오므로, 화면 밖 영상까지
+  // 동시에 요청하면 프록시가 버티지 못한다 (nginx 버퍼 고갈 → 503).
+  const [shouldLoad, setShouldLoad] = useState(false);
 
-  // 뷰포트 자동재생/정지
+  // 로딩 트리거: 화면에 들어오기 400px 전에 src 를 붙인다 (스크롤 매끄럽게)
   useEffect(() => {
     const video = ref.current;
-    if (!video) return;
+    if (!video || shouldLoad) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px 0px" },
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [shouldLoad]);
+
+  // 뷰포트 자동재생/정지 (실제로 보일 때만)
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || !shouldLoad) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -24,7 +45,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
     );
     observer.observe(video);
     return () => observer.disconnect();
-  }, []);
+  }, [shouldLoad]);
 
   function togglePlay() {
     const video = ref.current;
@@ -54,7 +75,8 @@ export default function AutoPlayVideo({ src }: { src: string }) {
     <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-gray-200 bg-black">
       <video
         ref={ref}
-        src={src}
+        src={shouldLoad ? src : undefined}
+        preload="none"
         muted={muted}
         loop
         playsInline
@@ -72,6 +94,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
         <button
           type="button"
           onClick={togglePlay}
+          aria-label="재생"
           className="absolute inset-0 flex items-center justify-center"
         >
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur">
@@ -85,6 +108,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
       <button
         type="button"
         onClick={toggleMute}
+        aria-label={muted ? "음소거 해제" : "음소거"}
         className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
       >
         {muted ? (
@@ -100,6 +124,12 @@ export default function AutoPlayVideo({ src }: { src: string }) {
 
       <div
         onClick={handleSeek}
+        role="slider"
+        aria-label="재생 위치"
+        aria-valuenow={Math.round(progress)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        tabIndex={0}
         className="absolute bottom-0 left-0 right-0 h-1 cursor-pointer bg-white/25"
       >
         <div className="h-full bg-white" style={{ width: `${progress}%` }} />
