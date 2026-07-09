@@ -15,6 +15,7 @@ export interface AuthUser {
   bio: string | null;
   auth_provider: string;
   is_public: boolean;
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
 }

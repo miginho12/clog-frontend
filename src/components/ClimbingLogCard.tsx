@@ -4,6 +4,7 @@ import AutoPlayVideo from "./AutoPlayVideo";
 import { useNavigate } from "react-router-dom";
 import type { ClimbingLog, CommentPreview } from "../api/client";
 import { colorInfo, colorLabel } from "../lib/colorMap";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 // 피드/목록의 단일 기록 카드.
 // 작성자 표시는 백엔드 author join 추가 후 (현재 미지원).
@@ -26,6 +27,7 @@ export default function ClimbingLogCard({
   onOpenComments?: (logId: string) => void;
 }) {
   const navigate = useNavigate();
+  const { isAdmin } = useCurrentUser();
   const [commentCount, setCommentCount] = useState(log.comment_count);
   const [topComment, setTopComment] = useState<CommentPreview | null>(
     log.top_comment,
@@ -88,6 +90,28 @@ export default function ClimbingLogCard({
               삭제
             </button>
           </div>
+        )}
+        {!mine && isAdmin && onDelete && (
+          <button
+            type="button"
+            onClick={() => onDelete(log.id)}
+            className="flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600 transition hover:bg-red-100"
+            title="관리자 권한으로 삭제"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+            </svg>
+            관리자 삭제
+          </button>
         )}
       </div>
 

@@ -242,6 +242,30 @@ export async function getFollowers(
   return handleResponse<FollowListResponse>(res);
 }
 
+// ── 사용자 차단 (admin) ──
+export interface AdminBanResponse {
+  user_id: string;
+  is_banned: boolean;
+}
+
+export async function banUser(userId: string): Promise<AdminBanResponse> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/${userId}/ban`,
+    { method: "POST" },
+    (t) => ({ Authorization: `Bearer ${t}` }),
+  );
+  return handleResponse<AdminBanResponse>(res);
+}
+
+export async function unbanUser(userId: string): Promise<AdminBanResponse> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/${userId}/ban`,
+    { method: "DELETE" },
+    (t) => ({ Authorization: `Bearer ${t}` }),
+  );
+  return handleResponse<AdminBanResponse>(res);
+}
+
 export async function getFollowing(
   userId: string,
 ): Promise<FollowListResponse> {
@@ -330,6 +354,49 @@ export async function getMyGrade(baseGym?: string): Promise<MeGradeResponse> {
 export async function listGymGradeSystems(): Promise<GymGradeSystem[]> {
   const res = await fetch(`${API_BASE_URL}/gym-grade-systems`);
   return handleResponse<GymGradeSystem[]>(res);
+}
+
+// ── 짐 색체계 관리 (admin) ──
+// POST/PATCH/DELETE 는 백엔드에서 admin 우회 허용 (일반 사용자는 본인 비공식만).
+
+export async function createGymGradeSystem(input: {
+  gym_name: string;
+  color_order: string[];
+  is_official?: boolean;
+}): Promise<GymGradeSystem> {
+  const res = await authFetch(
+    `${API_BASE_URL}/gym-grade-systems`,
+    { method: "POST", body: JSON.stringify(input) },
+    (t) => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${t}`,
+    }),
+  );
+  return handleResponse<GymGradeSystem>(res);
+}
+
+export async function updateGymGradeSystem(
+  id: string,
+  colorOrder: string[],
+): Promise<GymGradeSystem> {
+  const res = await authFetch(
+    `${API_BASE_URL}/gym-grade-systems/${id}`,
+    { method: "PATCH", body: JSON.stringify({ color_order: colorOrder }) },
+    (t) => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${t}`,
+    }),
+  );
+  return handleResponse<GymGradeSystem>(res);
+}
+
+export async function deleteGymGradeSystem(id: string): Promise<void> {
+  const res = await authFetch(`${API_BASE_URL}/gym-grade-systems/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    return handleResponse<void>(res);
+  }
 }
 
 // ── 클라이밍 로그 (피드 / 작성) ──

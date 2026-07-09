@@ -12,6 +12,7 @@ import {
   type CommentThread,
 } from "../api/client";
 import { isAuthenticated } from "../lib/auth";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 // 게시물 상세의 댓글 영역.
 // 스레드 렌더(최상위 + 대댓글 들여쓰기) + 작성 + 대댓글 + 삭제.
@@ -35,12 +36,14 @@ function CommentRow({
   onDelete,
   onPin,
   isReply,
+  isAdmin,
 }: {
   c: Comment;
   onReply?: (c: Comment) => void;
   onDelete: (id: string) => void;
   onPin?: (c: Comment) => void;
   isReply?: boolean;
+  isAdmin?: boolean;
 }) {
   const navigate = useNavigate();
   const [liked, setLiked] = useState(c.liked_by_me);
@@ -147,6 +150,15 @@ function CommentRow({
                 삭제
               </button>
             )}
+            {!c.is_mine && isAdmin && (
+              <button
+                onClick={() => onDelete(c.id)}
+                className="font-medium text-red-500 hover:text-red-600"
+                title="관리자 권한으로 삭제"
+              >
+                관리자 삭제
+              </button>
+            )}
             {c.can_pin && !isReply && onPin && (
               <button
                 onClick={() => onPin(c)}
@@ -170,6 +182,7 @@ export default function CommentSection({
   bare?: boolean;
 }) {
   const navigate = useNavigate();
+  const { isAdmin } = useCurrentUser();
   const [threads, setThreads] = useState<CommentThread[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -259,9 +272,16 @@ export default function CommentSection({
                 onReply={setReplyTo}
                 onDelete={handleDelete}
                 onPin={handlePin}
+                isAdmin={isAdmin}
               />
               {t.replies.map((r) => (
-                <CommentRow key={r.id} c={r} onDelete={handleDelete} isReply />
+                <CommentRow
+                  key={r.id}
+                  c={r}
+                  onDelete={handleDelete}
+                  isReply
+                  isAdmin={isAdmin}
+                />
               ))}
             </div>
           ))}
