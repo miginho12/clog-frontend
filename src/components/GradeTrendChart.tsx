@@ -157,7 +157,7 @@ export default function GradeTrendChart({ data, weeks, onWeeksChange }: Props) {
       </svg>
 
       <div className="mt-2 flex items-baseline gap-1.5 border-t border-gray-100 pt-3">
-        <span className="text-xs text-gray-500">현재 지수</span>
+        <span className="text-xs text-gray-500">점수</span>
         <span className="text-base font-semibold text-gray-800">{last.score.toFixed(2)}</span>
       </div>
     </div>

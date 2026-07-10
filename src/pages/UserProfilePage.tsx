@@ -280,7 +280,7 @@ export default function UserProfilePage() {
               <div className="text-lg font-semibold text-[#D85A30]">
                 {stats.current_score.toFixed(1)}
               </div>
-              <div className="text-xs text-gray-500">현재 지수</div>
+              <div className="text-xs text-gray-500">점수</div>
             </div>
             {stats.top_grade && stats.top_grade_system === "color" ? (
               <div

@@ -304,6 +304,9 @@ export interface VScaleGrade {
   top_rating: number | null;
   top_rating_label: string | null;
   counted_logs: number;
+  // 다음 등급 도전 진척도 (ADR-050)
+  next_grade_label: string | null;
+  readiness_pct: number | null;
 }
 
 export interface ColorGrade {
@@ -311,6 +314,9 @@ export interface ColorGrade {
   base_gym: string | null;
   top_rating_label: string | null;
   counted_logs: number;
+  // 다음 등급 도전 진척도 (ADR-050). 최상위 색이거나 완등 0건이면 null
+  next_grade_label: string | null;
+  readiness_pct: number | null;
 }
 
 export interface MeGradeResponse {

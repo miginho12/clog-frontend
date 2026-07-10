@@ -10,12 +10,10 @@ import {
   type GradeTimelinePoint,
 } from "../api/client";
 import { clearTokens } from "../lib/auth";
-import ScoreGauge from "../components/ScoreGauge";
 import GradeTrendChart from "../components/GradeTrendChart";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 
 // 점수 게이지 정규화 기준 (difficulty 최대치 ~11 → 10 기준으로 채움 비율)
-const SCORE_MAX = 10;
 
 // 트랙별 게이지 색
 const VSCALE_COLOR = "#D85A30"; // 주황 (포인트 컬러)
@@ -99,6 +97,8 @@ export default function GradePage() {
               score={grade.v_scale.comprehensive_score}
               ratingLabel={grade.v_scale.top_rating_label}
               countedLogs={grade.v_scale.counted_logs}
+              nextGradeLabel={grade.v_scale.next_grade_label}
+              readinessPct={grade.v_scale.readiness_pct}
               gaugeColor={VSCALE_COLOR}
             />
           )}
@@ -114,6 +114,8 @@ export default function GradePage() {
             score={grade.color.comprehensive_score}
             ratingLabel={grade.color.top_rating_label}
             countedLogs={grade.color.counted_logs}
+            nextGradeLabel={grade.color.next_grade_label}
+            readinessPct={grade.color.readiness_pct}
             gaugeColor={COLOR_COLOR}
             colorTrack
             baseGymName={grade.color.base_gym}
@@ -154,6 +156,8 @@ function TrackCard({
   footer,
   colorTrack = false,
   baseGymName = null,
+  nextGradeLabel = null,
+  readinessPct = null,
 }: {
   title: string;
   subtitle: string;
@@ -164,6 +168,9 @@ function TrackCard({
   footer?: React.ReactNode;
   colorTrack?: boolean;
   baseGymName?: string | null;
+  // 다음 등급 도전 진척도 (ADR-050)
+  nextGradeLabel?: string | null;
+  readinessPct?: number | null;
 }) {
   const empty = countedLogs === 0;
 
@@ -207,29 +214,47 @@ function TrackCard({
             <span className="text-3xl font-semibold text-gray-900">
               {score.toFixed(1)}
             </span>
-            <span className="mb-1 text-sm text-gray-400">/ {SCORE_MAX}</span>
           </div>
           <div className="mt-3">
-            <ScoreGauge score={score} max={SCORE_MAX} color={gaugeColor} />
           </div>
+          {nextGradeLabel && readinessPct !== null && (
+            <div className="mt-2">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span
+                  className="rounded px-1.5 py-0.5 font-medium"
+                  style={
+                    colorTrack
+                      ? {
+                          backgroundColor: colorInfo(nextGradeLabel).bg,
+                          color: colorInfo(nextGradeLabel).fg,
+                        }
+                      : { backgroundColor: gaugeColor, color: "#fff" }
+                  }
+                >
+                  {colorTrack ? colorLabel(nextGradeLabel) : nextGradeLabel}
+                </span>
+                <span>
+                  {readinessPct >= 100
+                    ? "에 도전할 때예요!"
+                    : `까지 ${Math.round(readinessPct)}%`}
+                </span>
+              </div>
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, readinessPct)}%`,
+                    backgroundColor: colorTrack
+                      ? colorInfo(nextGradeLabel).bg
+                      : gaugeColor,
+                  }}
+                />
+              </div>
+            </div>
+          )}
           <p className="mt-2 text-xs text-gray-400">
             상위 {countedLogs}개 기록 반영
           </p>
-          {colorTrack && ratingLabel && (
-            <p className="mt-1 text-xs text-gray-500">
-              지금 도전 가능한 난이도는{" "}
-              <span
-                className="rounded px-1.5 py-0.5 font-medium"
-                style={{
-                  backgroundColor: colorInfo(ratingLabel).bg,
-                  color: colorInfo(ratingLabel).fg,
-                }}
-              >
-                {colorLabel(ratingLabel)}
-              </span>{" "}
-              수준이에요
-            </p>
-          )}
         </>
       )}
 
