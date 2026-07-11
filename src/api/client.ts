@@ -235,6 +235,36 @@ export interface PublicUser {
   is_banned?: boolean; // admin 차단 UI 용
 }
 
+// ── 유저 검색 (GET /users/search) ──
+export interface UserSearchItem {
+  id: string;
+  nickname: string;
+  profile_image_url: string | null;
+  bio: string | null;
+}
+
+export interface UserSearchResponse {
+  items: UserSearchItem[];
+  page: number;
+  page_size: number;
+  has_next: boolean;
+}
+
+export async function searchUsers(
+  q: string,
+  page = 1,
+  pageSize = 20,
+): Promise<UserSearchResponse> {
+  const qs = new URLSearchParams({
+    q,
+    page: String(page),
+    page_size: String(pageSize),
+  });
+  const res = await authFetch(`${API_BASE_URL}/users/search?${qs.toString()}`);
+  return handleResponse<UserSearchResponse>(res);
+}
+
+
 export async function getUser(userId: string): Promise<PublicUser> {
   const res = await authFetch(`${API_BASE_URL}/users/${userId}`);
   return handleResponse<PublicUser>(res);

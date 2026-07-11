@@ -18,7 +18,7 @@ import { useNavDirection } from "../lib/navDirection";
 const TABS = [
   { to: "/feed", label: "피드", auth: false, icon: HomeIcon },
   { to: "/me/grade", label: "그레이드", auth: true, icon: ChartIcon },
-  { to: "/gyms", label: "암장", auth: true, icon: PinIcon },
+  { to: "/search", label: "검색", auth: true, icon: SearchIcon },
   { to: "/profile", label: "프로필", auth: true, icon: UserIcon },
 ];
 
@@ -53,9 +53,9 @@ export default function AppLayout() {
   }, [authed, location.pathname]);
 
   // 좌우 스와이프로 탭 이동.
-  // 순서: [생성(-1)] 피드(0) → 그레이드(1) → 암장(2) → 프로필(3)
+  // 순서: [생성(-1)] 피드(0) → 그레이드(1) → 검색(2) → 프로필(3)
   // 손가락 오른→왼(다음), 왼→오른(이전). 피드에서 이전 = 게시물 생성.
-  const SWIPE_ORDER = TABS.map((t) => t.to); // /feed, /me/grade, /gyms, /profile
+  const SWIPE_ORDER = TABS.map((t) => t.to); // /feed, /me/grade, /search, /profile
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   function currentIndex(): number {
@@ -305,11 +305,11 @@ function ChartIcon({ active }: { active: boolean }) {
   );
 }
 
-function PinIcon({ active }: { active: boolean }) {
+function SearchIcon({ active }: { active: boolean }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={iconColor(active)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z" />
-      <circle cx="12" cy="10" r="2.5" />
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
     </svg>
   );
 }

@@ -29,6 +29,7 @@ interface ProfileView {
   nickname: string;
   profile_image_url: string | null;
   bio: string | null;
+  is_public: boolean;
 }
 
 export default function UserProfilePage() {
@@ -77,18 +78,24 @@ export default function UserProfilePage() {
               nickname: me!.nickname,
               profile_image_url: me!.profile_image_url,
               bio: me!.bio,
+              is_public: true,
             }
           : await getUser(userId);
         setBanned(!!(p as PublicUser).is_banned);
         if (cancelled) return;
         setProfile(p);
 
-        const res = await listClimbingLogs({
-          author_id: userId,
-          page_size: 50,
-        });
-        if (cancelled) return;
-        setLogs(res.items);
+        // 비공개 계정(타인)은 게시글을 볼 수 없음 → 조회 스킵(빈 배열)
+        if (!mine && p.is_public === false) {
+          setLogs([]);
+        } else {
+          const res = await listClimbingLogs({
+            author_id: userId,
+            page_size: 50,
+          });
+          if (cancelled) return;
+          setLogs(res.items);
+        }
 
         // 팔로워/팔로잉 카운트 + 내 팔로우 여부
         const [followers, following] = await Promise.all([
@@ -344,7 +351,22 @@ export default function UserProfilePage() {
 
       <div>
         <h2 className="mb-3 text-sm font-medium text-gray-500">게시물</h2>
-        <PostGrid logs={logs} userId={id!} />
+        {!isMe && profile.is_public === false ? (
+          <div className="rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="11" width="16" height="9" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-700">비공개 계정입니다</p>
+            <p className="mt-1 text-xs text-gray-400">
+              이 사용자의 게시물은 볼 수 없어요. 프로필 정보만 공개되어 있습니다.
+            </p>
+          </div>
+        ) : (
+          <PostGrid logs={logs} userId={id!} />
+        )}
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import FeedPage from "./pages/FeedPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import FeedNewPage from "./pages/FeedNewPage";
 import GradePage from "./pages/GradePage";
-import GymsPage from "./pages/GymsPage";
+import SearchPage from "./pages/SearchPage";
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -71,10 +71,10 @@ export default function App() {
             }
           />
           <Route
-            path="/gyms"
+            path="/search"
             element={
               <ProtectedRoute>
-                <GymsPage />
+                <SearchPage />
               </ProtectedRoute>
             }
           />
