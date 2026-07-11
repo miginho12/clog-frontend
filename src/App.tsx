@@ -4,6 +4,7 @@ import SignupPage from "./pages/SignupPage";
 import VerifyPage from "./pages/VerifyPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
+import AccountSettingsPage from "./pages/AccountSettingsPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import FollowListPage from "./pages/FollowListPage";
 import FeedPage from "./pages/FeedPage";
@@ -82,6 +83,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/edit"
+            element={
+              <ProtectedRoute>
+                <AccountSettingsPage />
               </ProtectedRoute>
             }
           />

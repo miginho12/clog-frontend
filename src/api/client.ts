@@ -180,6 +180,50 @@ export async function getMe(): Promise<AuthUser> {
   return handleResponse<AuthUser>(res);
 }
 
+// ── 내 정보 수정 (PATCH /users/me) ──
+export interface UserUpdateInput {
+  nickname?: string;
+  bio?: string | null;
+  profile_image_url?: string | null;
+  is_public?: boolean;
+}
+
+export async function updateMe(input: UserUpdateInput): Promise<AuthUser> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/me`,
+    { method: "PATCH", body: JSON.stringify(input) },
+    (t) => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${t}`,
+    }),
+  );
+  return handleResponse<AuthUser>(res);
+}
+
+// ── 비밀번호 변경 (PATCH /users/me/password, local 계정만) — 204 ──
+export async function changePassword(input: {
+  current_password: string;
+  new_password: string;
+}): Promise<void> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/me/password`,
+    { method: "PATCH", body: JSON.stringify(input) },
+    (t) => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${t}`,
+    }),
+  );
+  if (!res.ok) return handleResponse<void>(res);
+}
+
+// ── 회원 탈퇴 (DELETE /users/me) — 204 ──
+export async function deleteAccount(): Promise<void> {
+  const res = await authFetch(`${API_BASE_URL}/users/me`, {
+    method: "DELETE",
+  });
+  if (!res.ok) return handleResponse<void>(res);
+}
+
 // ── 공개 프로필 조회 (인증 필요, is_public=true 사용자만) ──
 // UserPublicResponse: 내 정보(AuthUser)와 달리 email/auth_provider 미포함
 export interface PublicUser {
