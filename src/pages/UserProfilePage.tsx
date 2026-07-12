@@ -46,6 +46,7 @@ export default function UserProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [followStatus, setFollowStatus] = useState<"none" | "pending" | "accepted">("none");
   const [requestCount, setRequestCount] = useState(0);
+  const [followToast, setFollowToast] = useState<string | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const { isAdmin } = useCurrentUser();
@@ -195,6 +196,11 @@ export default function UserProfilePage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
+      {followToast && (
+        <div className="fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-full bg-gray-900/90 px-4 py-2 text-sm font-medium text-white shadow-lg">
+          {followToast}
+        </div>
+      )}
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center gap-5">
           {!isMe && myId ? (
@@ -204,8 +210,20 @@ export default function UserProfilePage() {
               profileImageUrl={profile.profile_image_url}
               initialStatus={followStatus}
               onChange={(st, count) => {
+                const prev = followStatus;
                 setFollowStatus(st);
                 setFollowerCount(count);
+                let msg: string | null = null;
+                if (st === "pending") msg = "팔로우 요청을 보냈어요";
+                else if (st === "accepted") msg = "팔로우했어요";
+                else if (st === "none" && prev === "pending")
+                  msg = "팔로우 요청을 취소했어요";
+                else if (st === "none" && prev === "accepted")
+                  msg = "팔로우를 취소했어요";
+                if (msg) {
+                  setFollowToast(msg);
+                  window.setTimeout(() => setFollowToast(null), 2000);
+                }
               }}
             />
           ) : profile.profile_image_url ? (
