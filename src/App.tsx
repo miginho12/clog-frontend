@@ -5,6 +5,7 @@ import VerifyPage from "./pages/VerifyPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
 import AccountSettingsPage from "./pages/AccountSettingsPage";
+import FollowRequestsPage from "./pages/FollowRequestsPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import FollowListPage from "./pages/FollowListPage";
 import FeedPage from "./pages/FeedPage";
@@ -75,6 +76,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <SearchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/follow-requests"
+            element={
+              <ProtectedRoute>
+                <FollowRequestsPage />
               </ProtectedRoute>
             }
           />

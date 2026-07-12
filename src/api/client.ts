@@ -233,6 +233,7 @@ export interface PublicUser {
   bio: string | null;
   is_public: boolean;
   is_banned?: boolean; // admin 차단 UI 용
+  follow_status?: "none" | "pending" | "accepted"; // viewer→이 사용자
 }
 
 // ── 유저 검색 (GET /users/search) ──
@@ -273,6 +274,7 @@ export async function getUser(userId: string): Promise<PublicUser> {
 // ── 팔로우 ──
 export interface FollowToggleResponse {
   following: boolean;
+  follow_status: "none" | "pending" | "accepted";
   follower_count: number;
 }
 
@@ -346,6 +348,30 @@ export async function getFollowing(
 ): Promise<FollowListResponse> {
   const res = await authFetch(`${API_BASE_URL}/users/${userId}/following`);
   return handleResponse<FollowListResponse>(res);
+}
+
+// ── 팔로우 요청 (승인제) ──
+export async function getFollowRequests(): Promise<FollowListResponse> {
+  const res = await authFetch(`${API_BASE_URL}/users/me/follow-requests`);
+  return handleResponse<FollowListResponse>(res);
+}
+
+export async function acceptFollowRequest(requesterId: string): Promise<void> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/${requesterId}/follow-request/accept`,
+    { method: "POST" },
+    (t) => ({ Authorization: `Bearer ${t}` }),
+  );
+  if (!res.ok) return handleResponse<void>(res);
+}
+
+export async function rejectFollowRequest(requesterId: string): Promise<void> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/${requesterId}/follow-request/reject`,
+    { method: "POST" },
+    (t) => ({ Authorization: `Bearer ${t}` }),
+  );
+  if (!res.ok) return handleResponse<void>(res);
 }
 
 // ── 프로필 통계 ──
@@ -848,7 +874,9 @@ export interface Notification {
     | "comment_reply"
     | "media_ready"
     | "media_failed"
-    | "follow";
+    | "follow"
+    | "follow_request"
+    | "follow_accept";
   climbing_log_id: string | null; // follow 알림은 게시물이 없다
   comment_id: string | null;
   is_read: boolean;

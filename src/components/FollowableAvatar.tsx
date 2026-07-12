@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { followUser, unfollowUser, ApiError } from "../api/client";
 
+type FollowStatus = "none" | "pending" | "accepted";
+
 interface Props {
   userId: string;
   nickname: string;
   profileImageUrl: string | null;
-  initialFollowing: boolean;
-  onChange?: (following: boolean, followerCount: number) => void;
+  initialStatus: FollowStatus;
+  onChange?: (status: FollowStatus, followerCount: number) => void;
 }
 
 // 팔로우 가능한 아바타 (A+E 컨셉).
@@ -16,26 +18,35 @@ export default function FollowableAvatar({
   userId,
   nickname,
   profileImageUrl,
-  initialFollowing,
+  initialStatus,
   onChange,
 }: Props) {
-  const [following, setFollowing] = useState(initialFollowing);
+  const [statusVal, setStatusVal] = useState<FollowStatus>(initialStatus);
   const [loading, setLoading] = useState(false);
   const initial = nickname.charAt(0).toUpperCase();
 
+  // 링 표시: accepted(팔로잉) 만. pending 은 '요청됨' 뱃지로 구분.
+  const following = statusVal === "accepted";
+  const pending = statusVal === "pending";
+
   async function toggle() {
     if (loading) return;
-    const next = !following;
-    setFollowing(next);
+    const isActive = statusVal !== "none"; // accepted or pending → 해제
+    const optimistic: FollowStatus = isActive ? "none" : "accepted";
+    setStatusVal(optimistic);
     setLoading(true);
     try {
-      const res = next
-        ? await followUser(userId)
-        : await unfollowUser(userId);
-      setFollowing(res.following);
-      onChange?.(res.following, res.follower_count);
+      if (isActive) {
+        const res = await unfollowUser(userId);
+        setStatusVal("none");
+        onChange?.("none", res.follower_count);
+      } else {
+        const res = await followUser(userId);
+        setStatusVal(res.follow_status); // accepted(공개) or pending(비공개)
+        onChange?.(res.follow_status, res.follower_count);
+      }
     } catch (err) {
-      setFollowing(!next);
+      setStatusVal(statusVal); // 롤백
       if (err instanceof ApiError && err.status === 401) {
         // 상위에서 처리
       }
@@ -51,7 +62,7 @@ export default function FollowableAvatar({
       className={`group relative block h-20 w-20 shrink-0 transition-transform active:scale-95 ${
         loading ? "opacity-60" : ""
       }`}
-      aria-label={following ? "팔로우 취소" : "팔로우"}
+      aria-label={pending ? "요청됨" : following ? "팔로우 취소" : "팔로우"}
     >
         <span
           className={`absolute inset-0 rounded-full transition-opacity ${
@@ -81,6 +92,11 @@ export default function FollowableAvatar({
           }`}>
             {initial}
           </div>
+        )}
+        {pending && (
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gray-800 px-2 py-0.5 text-[9px] font-medium text-white">
+            요청됨
+          </span>
         )}
     </button>
   );

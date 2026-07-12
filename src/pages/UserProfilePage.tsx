@@ -43,7 +43,7 @@ export default function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [followStatus, setFollowStatus] = useState<"none" | "pending" | "accepted">("none");
   const [myId, setMyId] = useState<string | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const { isAdmin } = useCurrentUser();
@@ -82,6 +82,9 @@ export default function UserProfilePage() {
             }
           : await getUser(userId);
         setBanned(!!(p as PublicUser).is_banned);
+        if (!mine) {
+          setFollowStatus((p as PublicUser).follow_status ?? "none");
+        }
         if (cancelled) return;
         setProfile(p);
 
@@ -113,9 +116,7 @@ export default function UserProfilePage() {
         } catch {
           // 통계 실패는 치명적이지 않음
         }
-        if (me && !mine) {
-          setIsFollowing(followers.users.some((u) => u.id === me!.id));
-        }
+        // 팔로우 상태는 getUser 의 follow_status 로 이미 세팅됨 (pending 포함)
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 404) {
@@ -190,9 +191,9 @@ export default function UserProfilePage() {
               userId={profile.id}
               nickname={profile.nickname}
               profileImageUrl={profile.profile_image_url}
-              initialFollowing={isFollowing}
-              onChange={(following, count) => {
-                setIsFollowing(following);
+              initialStatus={followStatus}
+              onChange={(st, count) => {
+                setFollowStatus(st);
                 setFollowerCount(count);
               }}
             />
@@ -320,6 +321,15 @@ export default function UserProfilePage() {
               </div>
             )}
           </div>
+        )}
+
+        {isMe && profile.is_public === false && (
+          <button
+            onClick={() => navigate("/follow-requests")}
+            className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#FAECE7] py-2 text-sm font-medium text-[#D85A30] transition hover:opacity-90"
+          >
+            받은 팔로우 요청 보기
+          </button>
         )}
 
         <div className="mt-5 flex gap-2">

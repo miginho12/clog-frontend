@@ -32,6 +32,10 @@ function actionText(type: Notification["type"]): string {
       return "님이 회원님의 댓글에 답글을 남겼습니다.";
     case "follow":
       return "님이 회원님을 팔로우했습니다.";
+    case "follow_request":
+      return "님이 회원님에게 팔로우를 요청했습니다.";
+    case "follow_accept":
+      return "님이 회원님의 팔로우 요청을 수락했습니다.";
     case "media_ready":
       return "님의 영상 처리가 완료되었습니다.";
     case "media_failed":
@@ -105,9 +109,13 @@ export default function NotificationsPage() {
             key={n.id}
             onClick={() =>
               navigate(
-                n.type === "follow" || !n.climbing_log_id
-                  ? `/users/${n.actor?.id}`
-                  : `/feed?start=${n.climbing_log_id}`,
+                n.type === "follow_request"
+                  ? "/follow-requests"
+                  : n.type === "follow" ||
+                      n.type === "follow_accept" ||
+                      !n.climbing_log_id
+                    ? `/users/${n.actor?.id}`
+                    : `/feed?start=${n.climbing_log_id}`,
               )
             }
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-gray-50 ${
