@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { followUser, unfollowUser, ApiError } from "../api/client";
 
 type FollowStatus = "none" | "pending" | "accepted";
@@ -23,6 +23,12 @@ export default function FollowableAvatar({
 }: Props) {
   const [statusVal, setStatusVal] = useState<FollowStatus>(initialStatus);
   const [loading, setLoading] = useState(false);
+
+  // 부모가 프로필을 비동기 로드해 initialStatus 를 나중에 확정하므로,
+  // 최초 마운트 초기값에 고정되지 않도록 prop 변경을 동기화한다.
+  useEffect(() => {
+    setStatusVal(initialStatus);
+  }, [initialStatus]);
   const initial = nickname.charAt(0).toUpperCase();
 
   // 링 표시: accepted(팔로잉) 만. pending 은 '요청됨' 뱃지로 구분.

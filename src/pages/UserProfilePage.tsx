@@ -78,7 +78,7 @@ export default function UserProfilePage() {
               nickname: me!.nickname,
               profile_image_url: me!.profile_image_url,
               bio: me!.bio,
-              is_public: true,
+              is_public: me!.is_public,
             }
           : await getUser(userId);
         setBanned(!!(p as PublicUser).is_banned);
