@@ -4,6 +4,7 @@ import {
   getFollowers,
   getFollowing,
   getMe,
+  removeFollower,
   ApiError,
   type FollowUserItem,
 } from "../api/client";
@@ -21,6 +22,7 @@ export default function FollowListPage({ mode }: Props) {
 
   const [users, setUsers] = useState<FollowUserItem[]>([]);
   const [myId, setMyId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +67,21 @@ export default function FollowListPage({ mode }: Props) {
   }, [id, mode, navigate]);
 
   const title = mode === "followers" ? "팔로워" : "팔로잉";
+  // 내가 내 팔로워 목록을 보는 경우에만 팔로워를 끊어낼 수 있다.
+  const isMyFollowersList = mode === "followers" && !!myId && myId === id;
+
+  async function handleRemoveFollower(followerId: string, nickname: string) {
+    if (!window.confirm(`${nickname}님을 팔로워에서 삭제할까요?`)) return;
+    setRemovingId(followerId);
+    try {
+      await removeFollower(followerId);
+      setUsers((prev) => prev.filter((u) => u.id !== followerId));
+    } catch {
+      alert("삭제에 실패했습니다.");
+    } finally {
+      setRemovingId(null);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
@@ -123,13 +140,24 @@ export default function FollowListPage({ mode }: Props) {
                     {u.nickname ?? "이름 없음"}
                   </span>
                 </button>
-                {myId && !isMe && (
+                {isMyFollowersList && !isMe ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRemoveFollower(u.id, u.nickname ?? "이 사용자")
+                    }
+                    disabled={removingId === u.id}
+                    className="shrink-0 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    삭제
+                  </button>
+                ) : myId && !isMe ? (
                   <FollowButton
                     userId={u.id}
                     initialFollowing={u.is_following}
                     size="sm"
                   />
-                )}
+                ) : null}
               </div>
             );
           })}

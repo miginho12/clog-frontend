@@ -356,6 +356,24 @@ export async function getFollowRequests(): Promise<FollowListResponse> {
   return handleResponse<FollowListResponse>(res);
 }
 
+export async function countFollowRequests(): Promise<number> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/me/follow-requests/count`,
+  );
+  const data = await handleResponse<{ count: number }>(res);
+  return data.count;
+}
+
+// 내 팔로워 끊어내기 (owner 가 자신을 팔로우하던 follower 제거)
+export async function removeFollower(followerId: string): Promise<void> {
+  const res = await authFetch(
+    `${API_BASE_URL}/users/${followerId}/follower`,
+    { method: "DELETE" },
+    (t) => ({ Authorization: `Bearer ${t}` }),
+  );
+  if (!res.ok) return handleResponse<void>(res);
+}
+
 export async function acceptFollowRequest(requesterId: string): Promise<void> {
   const res = await authFetch(
     `${API_BASE_URL}/users/${requesterId}/follow-request/accept`,

@@ -16,6 +16,7 @@ import {
 } from "../api/client";
 import { clearTokens, isAuthenticated } from "../lib/auth";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { countFollowRequests } from "../api/client";
 import PostGrid from "../components/PostGrid";
 import FollowableAvatar from "../components/FollowableAvatar";
 import { colorLabel, colorInfo } from "../lib/colorMap";
@@ -44,6 +45,7 @@ export default function UserProfilePage() {
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [followStatus, setFollowStatus] = useState<"none" | "pending" | "accepted">("none");
+  const [requestCount, setRequestCount] = useState(0);
   const [myId, setMyId] = useState<string | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const { isAdmin } = useCurrentUser();
@@ -87,6 +89,15 @@ export default function UserProfilePage() {
         }
         if (cancelled) return;
         setProfile(p);
+
+        // 본인이 비공개 계정이면 받은 요청 수 조회 (버튼 노출 판단)
+        if (mine && p.is_public === false) {
+          countFollowRequests()
+            .then((c) => {
+              if (!cancelled) setRequestCount(c);
+            })
+            .catch(() => {});
+        }
 
         // 비공개 계정(타인)은 게시글을 볼 수 없음 → 조회 스킵(빈 배열)
         if (!mine && p.is_public === false) {
@@ -323,12 +334,12 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        {isMe && profile.is_public === false && (
+        {isMe && profile.is_public === false && requestCount > 0 && (
           <button
             onClick={() => navigate("/follow-requests")}
             className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#FAECE7] py-2 text-sm font-medium text-[#D85A30] transition hover:opacity-90"
           >
-            받은 팔로우 요청 보기
+            받은 팔로우 요청 {requestCount}개
           </button>
         )}
 
