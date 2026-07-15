@@ -108,7 +108,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
           const v = e.currentTarget;
           if (v.duration) setProgress((v.currentTime / v.duration) * 100);
         }}
-        className="h-full w-full cursor-pointer object-cover"
+        className="h-full w-full cursor-pointer object-cover object-top"
       />
 
       {!playing && (
