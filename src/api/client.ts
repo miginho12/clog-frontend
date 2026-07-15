@@ -506,14 +506,30 @@ export interface GymRankingEntry {
 export interface GymRankingResponse {
   gym_name: string;
   brand_name: string | null;
+  period: "all" | "month" | "week";
+  range_start: string | null; // YYYY-MM-DD, period="all" 이면 null
+  range_end: string | null;
   entries: GymRankingEntry[];
+}
+
+export interface GymRankingParams {
+  period?: "all" | "month" | "week";
+  year?: number;
+  month?: number; // period="month" 일 때
+  week?: number; // period="week" 일 때 (ISO 주차)
 }
 
 export async function getGymRanking(
   gymName: string,
+  params: GymRankingParams = {},
 ): Promise<GymRankingResponse> {
+  const qs = new URLSearchParams({ gym_name: gymName });
+  if (params.period) qs.set("period", params.period);
+  if (params.year !== undefined) qs.set("year", String(params.year));
+  if (params.month !== undefined) qs.set("month", String(params.month));
+  if (params.week !== undefined) qs.set("week", String(params.week));
   const res = await fetch(
-    `${API_BASE_URL}/gym-grade-systems/ranking?gym_name=${encodeURIComponent(gymName)}`,
+    `${API_BASE_URL}/gym-grade-systems/ranking?${qs.toString()}`,
   );
   return handleResponse<GymRankingResponse>(res);
 }
