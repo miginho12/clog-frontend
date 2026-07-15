@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
+// 인스타 피드 기준: 세로는 4:5, 가로는 1.91:1 까지만 원본 비율을 쓰고
+// 그 밖의 극단적 비율은 경계값으로 clamp 한다 (완전히 안 잘리게 하는 게 아니라
+// 흔한 비율의 크롭을 없애는 절충안).
+const MIN_RATIO = 4 / 5;
+const MAX_RATIO = 1.91;
+
 // 뷰포트에 보이면 자동재생, 벗어나면 정지 + 미니멀 커스텀 컨트롤 (인스타 스타일).
 // 피드 카드 / 게시물 상세에서 공용으로 사용.
 export default function AutoPlayVideo({ src }: { src: string }) {
@@ -7,6 +13,8 @@ export default function AutoPlayVideo({ src }: { src: string }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0); // 0~100
+  // 메타데이터 로드 전 기본값(4:5 placeholder) → loadedmetadata 시 실제 비율로 교체
+  const [ratio, setRatio] = useState(MIN_RATIO);
   // 뷰포트 근처에 오기 전에는 src 를 붙이지 않는다.
   // src 가 붙으면 preload=metadata 로 첫 프레임만 받아 포스터를 그린다
   // (preload=none 은 검은 화면이 됨. 썸네일 파이프라인이 생기면 poster 로 대체).
@@ -69,12 +77,22 @@ export default function AutoPlayVideo({ src }: { src: string }) {
     const video = ref.current;
     if (!video || !video.duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / rect.width;
-    video.currentTime = ratio * video.duration;
+    const seekRatio = (e.clientX - rect.left) / rect.width;
+    video.currentTime = seekRatio * video.duration;
+  }
+
+  function handleLoadedMetadata(e: React.SyntheticEvent<HTMLVideoElement>) {
+    const video = e.currentTarget;
+    if (!video.videoWidth || !video.videoHeight) return;
+    const natural = video.videoWidth / video.videoHeight;
+    setRatio(Math.min(MAX_RATIO, Math.max(MIN_RATIO, natural)));
   }
 
   return (
-    <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-gray-200 bg-black">
+    <div
+      className="group relative w-full overflow-hidden rounded-lg border border-gray-200 bg-black"
+      style={{ aspectRatio: ratio }}
+    >
       <video
         ref={ref}
         src={shouldLoad ? src : undefined}
@@ -85,6 +103,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
         onClick={togglePlay}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
+        onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={(e) => {
           const v = e.currentTarget;
           if (v.duration) setProgress((v.currentTime / v.duration) * 100);
