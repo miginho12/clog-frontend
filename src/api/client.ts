@@ -488,6 +488,36 @@ export async function listGymGradeSystems(
   return handleResponse<GymGradeSystem[]>(res);
 }
 
+// ── 암장 랭킹 (공개 계정의 공개 컬러 등급 기록만) ──
+export interface GymRankingUser {
+  id: string;
+  nickname: string;
+  profile_image_url: string | null;
+}
+
+export interface GymRankingEntry {
+  rank: number;
+  user: GymRankingUser;
+  score: number;
+  top_color_label: string;
+  counted_logs: number;
+}
+
+export interface GymRankingResponse {
+  gym_name: string;
+  brand_name: string | null;
+  entries: GymRankingEntry[];
+}
+
+export async function getGymRanking(
+  gymName: string,
+): Promise<GymRankingResponse> {
+  const res = await fetch(
+    `${API_BASE_URL}/gym-grade-systems/ranking?gym_name=${encodeURIComponent(gymName)}`,
+  );
+  return handleResponse<GymRankingResponse>(res);
+}
+
 // ── 짐 색체계 관리 (admin) ──
 // POST/PATCH/DELETE 는 백엔드에서 admin 우회 허용 (일반 사용자는 본인 비공식만).
 

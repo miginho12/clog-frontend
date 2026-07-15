@@ -11,12 +11,15 @@ import {
   getClimbingLog,
   getMe,
   listGymGradeSystems,
+  getGymRanking,
   ApiError,
   type ClimbingLog,
   type GymGradeSystem,
+  type GymRankingEntry,
 } from "../api/client";
 import ClimbingLogCard from "../components/ClimbingLogCard";
 import CommentBottomSheet from "../components/CommentBottomSheet";
+import { colorInfo, colorLabel } from "../lib/colorMap";
 
 const PAGE_SIZE = 20;
 
@@ -43,6 +46,10 @@ export default function FeedPage() {
   const [error, setError] = useState<string | null>(null);
   const [sheetLogId, setSheetLogId] = useState<string | null>(null);
   const [siblingBranches, setSiblingBranches] = useState<GymGradeSystem[]>([]);
+  const [myGymSystem, setMyGymSystem] = useState<GymGradeSystem | null>(null);
+  const [showRanking, setShowRanking] = useState(false);
+  const [ranking, setRanking] = useState<GymRankingEntry[] | null>(null);
+  const [rankingLoading, setRankingLoading] = useState(false);
 
   const loadPage = useCallback(
     async (p: number) => {
@@ -98,6 +105,9 @@ export default function FeedPage() {
   useEffect(() => {
     if (!gymName) {
       setSiblingBranches([]);
+      setMyGymSystem(null);
+      setShowRanking(false);
+      setRanking(null);
       return;
     }
     let cancelled = false;
@@ -105,6 +115,7 @@ export default function FeedPage() {
       .then((all) => {
         if (cancelled) return;
         const mine = all.find((g) => g.gym_name === gymName);
+        setMyGymSystem(mine ?? null);
         setSiblingBranches(
           mine?.brand_name
             ? all.filter(
@@ -114,12 +125,24 @@ export default function FeedPage() {
         );
       })
       .catch(() => {
-        // 형제 지점 조회 실패는 치명적이지 않음 (섹션만 안 보임)
+        // 형제 지점/랭킹 가능 여부 조회 실패는 치명적이지 않음 (섹션만 안 보임)
       });
     return () => {
       cancelled = true;
     };
   }, [gymName]);
+
+  // 랭킹 토글: 등록된 암장(myGymSystem 존재)일 때만 처음 열 때 한 번 로드.
+  function toggleRanking() {
+    setShowRanking((v) => !v);
+    if (!ranking && gymName) {
+      setRankingLoading(true);
+      getGymRanking(gymName)
+        .then((res) => setRanking(res.entries))
+        .catch(() => setRanking([]))
+        .finally(() => setRankingLoading(false));
+    }
+  }
 
   // ?start=:postId 로 진입 시, 해당 카드로 즉시 이동 (움직임 안 보이게).
   // 이미지/영상 로드로 레이아웃이 밀리므로, 로드 후 재보정을 여러 번 시도.
@@ -161,6 +184,71 @@ export default function FeedPage() {
           <h1 className="truncate text-lg font-medium text-gray-900">
             {gymName ?? "게시물"}
           </h1>
+          {myGymSystem && (
+            <button
+              onClick={toggleRanking}
+              className="ml-auto shrink-0 rounded-full bg-[#FAECE7] px-3 py-1 text-xs font-medium text-[#D85A30] transition hover:opacity-80"
+            >
+              {showRanking ? "랭킹 닫기" : "🏆 랭킹"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {showRanking && myGymSystem && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4">
+          <h2 className="mb-3 text-sm font-medium text-gray-700">
+            {gymName} 랭킹 <span className="text-gray-400">(공개 계정 · 컬러 등급만)</span>
+          </h2>
+          {rankingLoading && (
+            <p className="py-6 text-center text-sm text-gray-400">불러오는 중...</p>
+          )}
+          {!rankingLoading && ranking && ranking.length === 0 && (
+            <p className="py-6 text-center text-sm text-gray-400">
+              아직 완등 기록이 없어요.
+            </p>
+          )}
+          {!rankingLoading && ranking && ranking.length > 0 && (
+            <div className="space-y-2">
+              {ranking.map((entry) => {
+                const ci = colorInfo(entry.top_color_label);
+                return (
+                  <button
+                    key={entry.user.id}
+                    onClick={() => navigate(`/users/${entry.user.id}`)}
+                    className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-gray-50"
+                  >
+                    <span className="w-5 shrink-0 text-center text-sm font-semibold text-gray-400">
+                      {entry.rank}
+                    </span>
+                    {entry.user.profile_image_url ? (
+                      <img
+                        src={entry.user.profile_image_url}
+                        alt={entry.user.nickname}
+                        className="h-8 w-8 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
+                        {entry.user.nickname.slice(0, 1)}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800">
+                      {entry.user.nickname}
+                    </span>
+                    <span
+                      className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                      style={{ backgroundColor: ci.bg, color: ci.fg }}
+                    >
+                      {colorLabel(entry.top_color_label)}
+                    </span>
+                    <span className="w-12 shrink-0 text-right text-sm font-semibold text-gray-900">
+                      {entry.score.toFixed(1)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
