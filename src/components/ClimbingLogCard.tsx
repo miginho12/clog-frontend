@@ -145,7 +145,14 @@ export default function ClimbingLogCard({
 
       {/* 짐 + 날짜 + 시도 */}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
-        {log.gym_name && <span className="text-gray-700">{log.gym_name}</span>}
+        {log.gym_name && (
+          <button
+            onClick={() => navigate(`/gyms/${encodeURIComponent(log.gym_name!)}`)}
+            className="text-gray-700 transition hover:text-[#D85A30] hover:underline"
+          >
+            {log.gym_name}
+          </button>
+        )}
         <span>{formatDate(log.climbed_at)}</span>
         <span>시도 {log.attempts}회</span>
       </div>

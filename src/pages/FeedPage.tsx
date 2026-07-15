@@ -21,8 +21,14 @@ const PAGE_SIZE = 20;
 export default function FeedPage() {
   const navigate = useNavigate();
   // /users/:userId/posts 로 진입하면 그 사용자 게시물만 필터.
+  // /gyms/:gymName 로 진입하면 그 암장(자연암 포함) 게시물만 필터.
   // ?start=:postId 있으면 로드 후 그 카드로 스크롤.
-  const { userId } = useParams<{ userId?: string }>();
+  // react-router 가 파라미터를 이미 디코딩해서 넘겨줌 (재디코딩 금지 — 이중 디코딩 시
+  // "%" 가 포함된 암장 이름에서 URIError 발생)
+  const { userId, gymName } = useParams<{
+    userId?: string;
+    gymName?: string;
+  }>();
   const [searchParams] = useSearchParams();
   const startId = searchParams.get("start");
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -44,6 +50,7 @@ export default function FeedPage() {
           page: p,
           page_size: PAGE_SIZE,
           author_id: userId,
+          gym_name: gymName,
         });
         setLogs((prev) => (p === 1 ? res.items : [...prev, ...res.items]));
         setHasNext(res.has_next);
@@ -58,7 +65,7 @@ export default function FeedPage() {
         setLoading(false);
       }
     },
-    [navigate, userId],
+    [navigate, userId, gymName],
   );
 
   async function handleDelete(id: string) {
@@ -108,8 +115,8 @@ export default function FeedPage() {
 
   return (
     <div className="space-y-4">
-      {/* 필터 피드(사용자 게시물)일 때만 뒤로가기 헤더. 전체 피드는 상단 헤더의 + 버튼 사용 */}
-      {userId && (
+      {/* 필터 피드(사용자 게시물/암장별)일 때만 뒤로가기 헤더. 전체 피드는 상단 헤더의 + 버튼 사용 */}
+      {(userId || gymName) && (
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
@@ -120,7 +127,9 @@ export default function FeedPage() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
-          <h1 className="text-lg font-medium text-gray-900">게시물</h1>
+          <h1 className="truncate text-lg font-medium text-gray-900">
+            {gymName ?? "게시물"}
+          </h1>
         </div>
       )}
 

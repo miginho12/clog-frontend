@@ -112,6 +112,7 @@ export default function App() {
             }
           />
           <Route path="/users/:userId/posts" element={<FeedPage />} />
+          <Route path="/gyms/:gymName" element={<FeedPage />} />
           <Route
             path="/users/:id/followers"
             element={<FollowListPage mode="followers" />}
