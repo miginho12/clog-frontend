@@ -445,6 +445,7 @@ export interface MeGradeResponse {
 export interface GymGradeSystem {
   id: string;
   gym_name: string;
+  brand_name: string | null;
   color_order: string[];
   is_official: boolean;
   created_by: string | null;
@@ -476,8 +477,14 @@ export async function getMyGrade(baseGym?: string): Promise<MeGradeResponse> {
 }
 
 // ── 짐 색체계 목록 조회 (공개) ──
-export async function listGymGradeSystems(): Promise<GymGradeSystem[]> {
-  const res = await fetch(`${API_BASE_URL}/gym-grade-systems`);
+// brandName 넘기면 같은 브랜드(체인) 지점만 필터.
+export async function listGymGradeSystems(
+  brandName?: string,
+): Promise<GymGradeSystem[]> {
+  const query = brandName
+    ? `?brand_name=${encodeURIComponent(brandName)}`
+    : "";
+  const res = await fetch(`${API_BASE_URL}/gym-grade-systems${query}`);
   return handleResponse<GymGradeSystem[]>(res);
 }
 
@@ -486,6 +493,7 @@ export async function listGymGradeSystems(): Promise<GymGradeSystem[]> {
 
 export async function createGymGradeSystem(input: {
   gym_name: string;
+  brand_name?: string | null;
   color_order: string[];
   is_official?: boolean;
 }): Promise<GymGradeSystem> {
@@ -503,10 +511,17 @@ export async function createGymGradeSystem(input: {
 export async function updateGymGradeSystem(
   id: string,
   colorOrder: string[],
+  brandName?: string | null,
 ): Promise<GymGradeSystem> {
   const res = await authFetch(
     `${API_BASE_URL}/gym-grade-systems/${id}`,
-    { method: "PATCH", body: JSON.stringify({ color_order: colorOrder }) },
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        color_order: colorOrder,
+        brand_name: brandName ?? null,
+      }),
+    },
     (t) => ({
       "Content-Type": "application/json",
       Authorization: `Bearer ${t}`,

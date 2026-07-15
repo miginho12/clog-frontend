@@ -39,6 +39,7 @@ export default function AdminPage() {
   // 등록 폼
   const [showForm, setShowForm] = useState(false);
   const [gymName, setGymName] = useState("");
+  const [brandName, setBrandName] = useState("");
   const [order, setOrder] = useState<string[]>([]);
   const [isOfficial, setIsOfficial] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +48,7 @@ export default function AdminPage() {
   // 색 순서 편집 (카드 인라인)
   const [editId, setEditId] = useState<string | null>(null);
   const [editOrder, setEditOrder] = useState<string[]>([]);
+  const [editBrandName, setEditBrandName] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function AdminPage() {
 
   function resetForm() {
     setGymName("");
+    setBrandName("");
     setOrder([]);
     setIsOfficial(true);
     setFormError(null);
@@ -88,6 +91,7 @@ export default function AdminPage() {
     try {
       const created = await createGymGradeSystem({
         gym_name: gymName.trim(),
+        brand_name: brandName.trim() || null,
         color_order: order,
         is_official: isOfficial,
       });
@@ -121,6 +125,7 @@ export default function AdminPage() {
   function startEdit(g: GymGradeSystem) {
     setEditId(g.id);
     setEditOrder(g.color_order);
+    setEditBrandName(g.brand_name ?? "");
   }
 
   async function handleUpdate(id: string) {
@@ -130,7 +135,11 @@ export default function AdminPage() {
     }
     setEditSaving(true);
     try {
-      const updated = await updateGymGradeSystem(id, editOrder);
+      const updated = await updateGymGradeSystem(
+        id,
+        editOrder,
+        editBrandName.trim() || null,
+      );
       setGyms((prev) => prev.map((x) => (x.id === id ? updated : x)));
       setEditId(null);
     } catch (e) {
@@ -173,6 +182,16 @@ export default function AdminPage() {
             value={gymName}
             onChange={(e) => setGymName(e.target.value)}
             placeholder="예: 더클라임 강남"
+            className="mb-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#D85A30]"
+          />
+
+          <label className="mb-1 block text-xs font-medium text-gray-600">
+            브랜드 <span className="text-gray-400">(선택 — 같은 브랜드 지점끼리 묶어보기)</span>
+          </label>
+          <input
+            value={brandName}
+            onChange={(e) => setBrandName(e.target.value)}
+            placeholder="예: 더클라임"
             className="mb-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#D85A30]"
           />
 
@@ -260,6 +279,11 @@ export default function AdminPage() {
               <span className="text-sm font-medium text-gray-900">
                 {g.gym_name}
               </span>
+              {g.brand_name && (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
+                  {g.brand_name}
+                </span>
+              )}
               {g.is_official ? (
                 <span className="rounded-full bg-[#FAECE7] px-2 py-0.5 text-[10px] text-[#D85A30]">
                   공식
@@ -289,6 +313,15 @@ export default function AdminPage() {
 
             {editId === g.id ? (
               <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">
+                  브랜드 (선택)
+                </label>
+                <input
+                  value={editBrandName}
+                  onChange={(e) => setEditBrandName(e.target.value)}
+                  placeholder="예: 더클라임"
+                  className="mb-2 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs outline-none focus:border-[#D85A30]"
+                />
                 <p className="mb-1 text-[11px] text-gray-500">
                   쉬움 → 어려움 순. 위쪽 색을 클릭하면 제거, 아래 팔레트에서 추가.
                 </p>

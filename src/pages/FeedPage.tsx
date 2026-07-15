@@ -10,8 +10,10 @@ import {
   deleteClimbingLog,
   getClimbingLog,
   getMe,
+  listGymGradeSystems,
   ApiError,
   type ClimbingLog,
+  type GymGradeSystem,
 } from "../api/client";
 import ClimbingLogCard from "../components/ClimbingLogCard";
 import CommentBottomSheet from "../components/CommentBottomSheet";
@@ -40,6 +42,7 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sheetLogId, setSheetLogId] = useState<string | null>(null);
+  const [siblingBranches, setSiblingBranches] = useState<GymGradeSystem[]>([]);
 
   const loadPage = useCallback(
     async (p: number) => {
@@ -90,6 +93,34 @@ export default function FeedPage() {
     loadPage(1);
   }, [loadPage]);
 
+  // 암장 피드일 때, 같은 브랜드(체인)의 다른 지점을 찾아 보여준다.
+  // gym_grade_systems 는 자연암(V스케일 자유 입력)엔 없으므로 실내 암장일 때만 뜬다.
+  useEffect(() => {
+    if (!gymName) {
+      setSiblingBranches([]);
+      return;
+    }
+    let cancelled = false;
+    listGymGradeSystems()
+      .then((all) => {
+        if (cancelled) return;
+        const mine = all.find((g) => g.gym_name === gymName);
+        setSiblingBranches(
+          mine?.brand_name
+            ? all.filter(
+                (g) => g.brand_name === mine.brand_name && g.gym_name !== gymName,
+              )
+            : [],
+        );
+      })
+      .catch(() => {
+        // 형제 지점 조회 실패는 치명적이지 않음 (섹션만 안 보임)
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gymName]);
+
   // ?start=:postId 로 진입 시, 해당 카드로 즉시 이동 (움직임 안 보이게).
   // 이미지/영상 로드로 레이아웃이 밀리므로, 로드 후 재보정을 여러 번 시도.
   useEffect(() => {
@@ -130,6 +161,21 @@ export default function FeedPage() {
           <h1 className="truncate text-lg font-medium text-gray-900">
             {gymName ?? "게시물"}
           </h1>
+        </div>
+      )}
+
+      {siblingBranches.length > 0 && (
+        <div className="-mt-2 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+          <span>같은 브랜드 다른 지점:</span>
+          {siblingBranches.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => navigate(`/gyms/${encodeURIComponent(g.gym_name)}`)}
+              className="rounded-full bg-[#FAECE7] px-2.5 py-1 font-medium text-[#D85A30] transition hover:opacity-80"
+            >
+              {g.gym_name}
+            </button>
+          ))}
         </div>
       )}
 
