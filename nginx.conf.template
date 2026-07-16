@@ -1,11 +1,15 @@
-# Clog 프론트엔드 nginx 설정
+# Clog 프론트엔드 nginx 설정 (envsubst 템플릿)
 #
 # 역할:
 # 1. React SPA 정적 파일 서빙 (/ → index.html)
 # 2. SPA 라우팅 지원 (history fallback): /login, /profile 등 새로고침해도 index.html
 # 3. /api/* 를 백엔드로 프록시 (접두어 /api 제거 → 방식 A)
 #
-# 백엔드 서비스: clog-dev (같은 dev 네임스페이스, 80 포트)
+# 백엔드 서비스: ${CLOG_BACKEND_HOST} (컨테이너 시작 시 envsubst로 치환, dev=clog-dev / prod=clog-prod)
+# 같은 이미지를 dev/prod에 그대로 재사용 — "빌드 한 번, 승격만" 원칙 (ADR-053)
+#
+# ⚠️ nginx 자체 변수($host, $request_uri 등)까지 envsubst가 건드리지 않도록
+#    Dockerfile에서 NGINX_ENVSUBST_FILTER='^CLOG_' 로 치환 대상을 한정함.
 
 server {
     listen 80;
@@ -24,7 +28,7 @@ server {
     # /api/auth/signup → 백엔드 /auth/signup
     location /api/ {
         # 끝의 / 가 핵심: /api/ 를 떼고 나머지를 백엔드 / 뒤에 붙임
-        proxy_pass http://clog-dev:80/;
+        proxy_pass http://${CLOG_BACKEND_HOST}:80/;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

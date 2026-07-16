@@ -28,9 +28,15 @@ RUN npm run build
 # ─────────────────────────────────────────
 FROM nginx:1.27-alpine AS runtime
 
-# 기본 nginx 설정 제거 후 커스텀 설정 복사
+# 기본 nginx 설정 제거 후 커스텀 설정을 envsubst 템플릿으로 복사
+# nginx 공식 이미지가 시작 시 /etc/nginx/templates/*.template 을 envsubst 처리해
+# 같은 이름으로 /etc/nginx/conf.d/ 에 생성한다 (재빌드 없이 dev/prod 백엔드 주소만 전환).
+# NGINX_ENVSUBST_FILTER 로 치환 대상을 CLOG_ 접두 변수로 한정 —
+# 안 하면 nginx 자체 변수($host, $request_uri 등)까지 envsubst가 지워버린다.
 RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/conf.d/clog.conf
+COPY nginx.conf.template /etc/nginx/templates/clog.conf.template
+ENV NGINX_ENVSUBST_FILTER=^CLOG_
+ENV CLOG_BACKEND_HOST=clog-dev
 
 # 빌드 결과물(dist) 복사
 COPY --from=builder /app/dist /usr/share/nginx/html
