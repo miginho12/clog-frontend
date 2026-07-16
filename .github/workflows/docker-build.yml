@@ -12,7 +12,31 @@ env:
   IMAGE_NAME: ${{ github.repository }}   # miginho12/clog-frontend
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (eslint)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Type check (tsc)
+        run: npx tsc -b --noEmit
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
