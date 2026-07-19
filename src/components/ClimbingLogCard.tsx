@@ -74,21 +74,24 @@ export default function ClimbingLogCard({
               >
                 {log.author.nickname}
               </button>
-              <div className="text-[11px] text-muted">
-                {log.gym_name && (
-                  <>
-                    <button
-                      onClick={() =>
-                        navigate(`/gyms/${encodeURIComponent(log.gym_name!)}`)
-                      }
-                      className="hover:text-primary hover:underline"
-                    >
-                      {log.gym_name}
-                    </button>{" "}
-                    ·{" "}
-                  </>
-                )}
-                {formatDate(log.climbed_at)} · 시도 {log.attempts}회
+              <div className="text-[11px] leading-[1.5] text-muted">
+                <div className="truncate">
+                  {log.gym_name && (
+                    <>
+                      <button
+                        onClick={() =>
+                          navigate(`/gyms/${encodeURIComponent(log.gym_name!)}`)
+                        }
+                        className="hover:text-primary hover:underline"
+                      >
+                        {log.gym_name}
+                      </button>{" "}
+                      ·{" "}
+                    </>
+                  )}
+                  {formatDate(log.climbed_at)}
+                </div>
+                <div>시도 {log.attempts}회</div>
               </div>
             </div>
           </div>
