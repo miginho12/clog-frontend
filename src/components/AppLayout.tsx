@@ -5,12 +5,19 @@ import {
   NavLink,
   useLocation,
   useNavigate,
+  useNavigationType,
   useOutlet,
 } from "react-router-dom";
 import { isAuthenticated } from "../lib/auth";
 import { getUnreadCount } from "../api/client";
 import { useNavDirection } from "../lib/navDirection";
-import { TRANSITION_PILL, TRANSITION_SHEET, TRANSITION_TAB } from "../lib/motion";
+import { useCurrentUser } from "../lib/useCurrentUser";
+import {
+  TRANSITION_PILL,
+  TRANSITION_PUSH,
+  TRANSITION_SHEET,
+  TRANSITION_TAB,
+} from "../lib/motion";
 
 // 모바일 웹 규격 셸. PC/모바일 동일 뷰: 고정 너비(max-w-md) 중앙 컨테이너.
 // 상단 = 로고 + 기록하기/알림, 하단 = 플로팅 탭바(피드/그레이드/검색/프로필).
@@ -25,8 +32,10 @@ const TABS = [
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const navigationType = useNavigationType();
   const outlet = useOutlet();
   const { getDirection, setDirection } = useNavDirection();
+  const { user: me } = useCurrentUser();
   const authed = isAuthenticated();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -58,10 +67,18 @@ export default function AppLayout() {
   const SWIPE_ORDER = TABS.map((t) => t.to); // /feed, /me/grade, /search, /profile
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
+  // /users/:id 가 "내 프로필"(=프로필 탭)인지 판별. me 로딩 전에는 판단 불가하므로
+  // false 취급(잠깐 push 취급되어도 다음 렌더에서 즉시 바로잡힘 — 부작용 없음).
+  function isOwnProfilePath(path: string): boolean {
+    const match = /^\/users\/([^/]+)$/.exec(path);
+    return !!match && !!me && match[1] === me.id;
+  }
+
   function currentIndex(): number {
     const path = location.pathname;
-    // /users/:id (내 프로필로 리다이렉트된 경로, /posts 제외)은 프로필 탭으로 간주
-    if (/^\/users\/[^/]+$/.test(path)) {
+    // 내 프로필(/profile 리다이렉트 대상)만 프로필 탭으로 간주.
+    // 남의 프로필(/users/:id)은 드릴다운 화면이라 탭 취급하지 않는다.
+    if (isOwnProfilePath(path)) {
       return SWIPE_ORDER.indexOf("/profile");
     }
     const idx = SWIPE_ORDER.findIndex((to) =>
@@ -78,13 +95,22 @@ export default function AppLayout() {
     // 필터 피드(사용자 게시물)는 별개 화면
     if (/^\/users\/[^/]+\/posts/.test(path)) return "user-posts";
     // 내 프로필(/profile 또는 /users/:id)은 하나의 화면으로
-    if (path === "/profile" || /^\/users\/[^/]+$/.test(path)) {
+    if (path === "/profile" || isOwnProfilePath(path)) {
       return "profile";
     }
     const idx = currentIndex();
     if (idx !== -1) return "tab-" + idx;
     return path;
   }
+
+  // 탭(형제 화면) 스와이프 스택에 속하지 않는 화면 = 드릴다운(부모→자식) 화면.
+  // 팔로워목록·알림·설정·관리자·유저프로필 등.
+  const isPushScreen = currentIndex() === -1;
+  // 이 전환 자체가 "push 성격"인지: 목적지가 드릴다운 화면이거나(들어가는 중),
+  // 브라우저 뒤로가기/navigate(-1)로 온 경우(POP은 이 앱에서 항상 드릴다운을
+  // 벗어나는 동작이므로 목적지가 탭이어도 push 모션을 써야 자연스럽다).
+  const isPushTransition = isPushScreen || navigationType === "POP";
+  const dir = isPushTransition ? (navigationType === "POP" ? -1 : 1) : getDirection();
 
   function goByDelta(delta: number) {
     setDirection(delta); // 애니메이션 방향
@@ -111,13 +137,13 @@ export default function AppLayout() {
     navigate(to);
   }
 
-  // 하단 탭바 클릭 시에도 방향 계산 (탭 순서 기준)
+  // 하단 탭바 클릭 시에도 방향 계산 (탭 순서 기준).
+  // 드릴다운 화면(from === -1)에서 탭을 누르면 "돌아가는" 느낌으로 왼→오른.
   function onTabClick(targetTo: string) {
     const from = currentIndex();
     const to = SWIPE_ORDER.indexOf(targetTo);
-    if (from !== -1 && to !== -1) {
-      setDirection(to > from ? 1 : -1);
-    }
+    if (to === -1) return;
+    setDirection(from === -1 ? -1 : to > from ? 1 : -1);
   }
 
   function onTouchStart(x: number, y: number) {
@@ -201,7 +227,11 @@ export default function AppLayout() {
             onTouchEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
           }
         >
-          <AnimatePresence initial={false} mode="popLayout" custom={getDirection()}>
+          <AnimatePresence
+            initial={false}
+            mode="popLayout"
+            custom={{ dir, push: isPushTransition }}
+          >
             {isSheet ? (
               // 기록 작성/수정 — 바텀시트처럼 아래에서 위로 슬라이드.
               // 진짜 오버레이는 아니라(탭과 같은 스와이프 스택에 속한 페이지)
@@ -222,22 +252,28 @@ export default function AppLayout() {
                 {outlet}
               </motion.div>
             ) : (
+              // 탭(형제 교체)은 좌우 슬라이드, 드릴다운(부모→자식)은 페이드+스케일로
+              // 확실히 다른 느낌을 준다. 좌우 이동이 아예 없어서 두 화면이 겹치는
+              // 동안 애매하게 반투명 오버랩이 남는(잔상처럼 보이는) 문제가 구조적으로
+              // 생기지 않는다 — opacity가 0→1 / 1→0 으로 딱 떨어지기 때문.
               <motion.div
                 key={screenKey()}
-                custom={getDirection()}
+                custom={{ dir, push: isPushTransition }}
                 variants={{
-                  enter: (dir: number) => ({
-                    x: dir > 0 ? "100%" : "-100%",
-                  }),
-                  center: { x: 0 },
-                  exit: (dir: number) => ({
-                    x: dir > 0 ? "-100%" : "100%",
-                  }),
+                  enter: ({ dir, push }: { dir: number; push: boolean }) =>
+                    push
+                      ? { opacity: 0, scale: dir > 0 ? 0.97 : 1.03 }
+                      : { x: dir > 0 ? "100%" : "-100%" },
+                  center: { x: 0, opacity: 1, scale: 1 },
+                  exit: ({ dir, push }: { dir: number; push: boolean }) =>
+                    push
+                      ? { opacity: 0, scale: dir > 0 ? 1.03 : 0.97 }
+                      : { x: dir > 0 ? "-100%" : "100%" },
                 }}
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={TRANSITION_TAB}
+                transition={isPushTransition ? TRANSITION_PUSH : TRANSITION_TAB}
                 className="min-h-full px-4 py-6 pb-28"
               >
                 {outlet}

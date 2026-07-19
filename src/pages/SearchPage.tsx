@@ -33,6 +33,7 @@ export default function SearchPage() {
 
   const [gyms, setGyms] = useState<GymGradeSystem[]>([]);
   const [popularTags, setPopularTags] = useState<CategoryCount[]>([]);
+  const [browseLoading, setBrowseLoading] = useState(true);
   const [users, setUsers] = useState<UserSearchItem[]>([]);
   const [userLoading, setUserLoading] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
@@ -46,13 +47,16 @@ export default function SearchPage() {
   }, []);
 
   // 암장 전체 목록 + 인기 태그 — 1회 로드 (브라우징 + 부분일치 검색 소스로 겸용)
+  // 로컬/캐시로 응답이 너무 빠르면 스켈레톤이 한 프레임도 안 보이고 바로
+  // 데이터로 "탁" 바뀌어 오히려 더 갑작스러워 보인다. 최소 노출 시간을 둬서
+  // 다른 탭의 "로딩 중 → 데이터" 흐름과 체감 속도를 맞춘다.
   useEffect(() => {
-    listGymGradeSystems()
-      .then(setGyms)
-      .catch(() => {});
-    getPopularCategories(30)
-      .then(setPopularTags)
-      .catch(() => {});
+    const minDelay = new Promise((resolve) => window.setTimeout(resolve, 120));
+    Promise.allSettled([
+      listGymGradeSystems().then(setGyms),
+      getPopularCategories(30).then(setPopularTags),
+      minDelay,
+    ]).finally(() => setBrowseLoading(false));
   }, []);
 
   // 클라이머(유저) 검색만 실제 네트워크 호출 — 디바운스
@@ -204,6 +208,8 @@ export default function SearchPage() {
             </p>
           )}
         </div>
+      ) : browseLoading ? (
+        <BrowseSkeleton filter={filter} />
       ) : (
         <div className="space-y-3.5">
           {(filter === "all" || filter === "gym") && gyms.length > 0 && (
@@ -231,6 +237,50 @@ export default function SearchPage() {
               닉네임을 입력해 클라이머를 찾아보세요.
             </p>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 첫 로딩 중 뼈대(shell) 먼저 보여주기 — 데이터 도착 후 갑자기 화면이
+// "뿅" 나타나는 대신, 다른 탭들처럼 레이아웃이 먼저 잡히고 내용만 채워지게.
+function BrowseSkeleton({ filter }: { filter: Filter }) {
+  const shimmer =
+    "animate-shimmer bg-[linear-gradient(90deg,#F0EDF6_25%,#F7F4FB_50%,#F0EDF6_75%)]";
+  return (
+    <div className="space-y-3.5">
+      {(filter === "all" || filter === "gym") && (
+        <div>
+          <div className={`mb-2.5 h-4 w-20 rounded-[6px] ${shimmer}`} />
+          <div className="flex flex-col gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-[18px] bg-white px-4 py-3.5 shadow-[0_2px_12px_rgba(90,70,140,.06)]"
+              >
+                <div className={`h-[42px] w-[42px] shrink-0 rounded-tile ${shimmer}`} />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className={`h-3 w-24 rounded-[6px] ${shimmer}`} />
+                  <div className={`h-2.5 w-16 rounded-[6px] ${shimmer}`} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(filter === "all" || filter === "tag") && (
+        <div>
+          <div className={`mb-2.5 h-4 w-24 rounded-[6px] ${shimmer}`} />
+          <div className="flex flex-wrap gap-2">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className={`h-[30px] w-16 rounded-full ${shimmer}`}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
