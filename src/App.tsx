@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import VerifyPage from "./pages/VerifyPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -29,6 +30,7 @@ export default function App() {
         {/* 인증 바깥 (전체화면) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/verify" element={<VerifyPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
@@ -113,6 +115,7 @@ export default function App() {
           />
           <Route path="/users/:userId/posts" element={<FeedPage />} />
           <Route path="/gyms/:gymName" element={<FeedPage />} />
+          <Route path="/tags/:tag" element={<FeedPage />} />
           <Route
             path="/users/:id/followers"
             element={<FollowListPage mode="followers" />}

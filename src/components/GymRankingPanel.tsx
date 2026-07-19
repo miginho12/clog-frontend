@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getGymRanking, type GymRankingEntry } from "../api/client";
 import { colorInfo, colorLabel } from "../lib/colorMap";
+import { avatarGradient } from "../lib/avatarGradient";
 
 // 암장 랭킹 패널 — 전체(누적) / 월별 / 주별(ISO) 세 기간을 토글하고,
 // 월·주 모드에서는 이전/다음으로 다른 기간을 넘겨볼 수 있다.
@@ -106,18 +107,18 @@ export default function GymRankingPanel({ gymName }: { gymName: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-medium text-gray-700">{gymName} 랭킹</h2>
+    <div className="rounded-card-lg bg-white p-4 shadow-[0_2px_12px_rgba(90,70,140,.06)]">
+      <h2 className="mb-3 text-[13px] font-extrabold text-title">{gymName} 랭킹</h2>
 
-      <div className="mb-3 flex items-center gap-1.5">
+      <div className="mb-3 flex items-center gap-1.5 rounded-input bg-segment p-1">
         {PERIOD_TABS.map((tab) => (
           <button
             key={tab.value}
             onClick={() => switchPeriod(tab.value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+            className={`flex-1 rounded-[11px] py-1.5 text-xs font-bold transition ${
               period === tab.value
-                ? "bg-[#D85A30] text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "bg-white text-title shadow-[0_1px_4px_rgba(90,70,140,.12)]"
+                : "text-muted"
             }`}
           >
             {tab.label}
@@ -130,17 +131,17 @@ export default function GymRankingPanel({ gymName }: { gymName: string }) {
           <button
             onClick={() => (period === "month" ? shiftMonth(-1) : shiftWeek(-1))}
             aria-label="이전 기간"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition hover:bg-segment"
           >
             ‹
           </button>
-          <span className="min-w-[7rem] text-center text-sm font-medium text-gray-700">
+          <span className="min-w-[7rem] text-center text-sm font-bold text-title">
             {period === "month" ? monthLabel(anchor) : weekLabel(anchor)}
           </span>
           <button
             onClick={() => (period === "month" ? shiftMonth(1) : shiftWeek(1))}
             aria-label="다음 기간"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition hover:bg-segment"
           >
             ›
           </button>
@@ -148,24 +149,24 @@ export default function GymRankingPanel({ gymName }: { gymName: string }) {
       )}
 
       {loading && (
-        <p className="py-6 text-center text-sm text-gray-400">불러오는 중...</p>
+        <p className="py-6 text-center text-sm text-muted">불러오는 중...</p>
       )}
       {!loading && entries && entries.length === 0 && (
-        <p className="py-6 text-center text-sm text-gray-400">
+        <p className="py-6 text-center text-sm text-muted">
           이 기간엔 완등 기록이 없어요.
         </p>
       )}
       {!loading && entries && entries.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {entries.map((entry) => {
             const ci = colorInfo(entry.top_color_label);
             return (
               <button
                 key={entry.user.id}
                 onClick={() => navigate(`/users/${entry.user.id}`)}
-                className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-gray-50"
+                className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-input"
               >
-                <span className="w-5 shrink-0 text-center text-sm font-semibold text-gray-400">
+                <span className="w-5 shrink-0 text-center text-sm font-bold text-muted">
                   {entry.rank}
                 </span>
                 {entry.user.profile_image_url ? (
@@ -175,20 +176,23 @@ export default function GymRankingPanel({ gymName }: { gymName: string }) {
                     className="h-8 w-8 shrink-0 rounded-full object-cover"
                   />
                 ) : (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
+                  <span
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                    style={{ background: avatarGradient(entry.user.id) }}
+                  >
                     {entry.user.nickname.slice(0, 1)}
                   </span>
                 )}
-                <span className="min-w-0 flex-1 truncate text-sm text-gray-800">
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-title">
                   {entry.user.nickname}
                 </span>
                 <span
-                  className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold"
                   style={{ backgroundColor: ci.bg, color: ci.fg }}
                 >
                   {colorLabel(entry.top_color_label)}
                 </span>
-                <span className="w-12 shrink-0 text-right text-sm font-semibold text-gray-900">
+                <span className="w-12 shrink-0 text-right text-sm font-extrabold text-title">
                   {entry.score.toFixed(1)}
                 </span>
               </button>

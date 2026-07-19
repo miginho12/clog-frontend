@@ -40,3 +40,12 @@ export function colorLabel(code: string): string {
 export function colorInfo(code: string): ColorInfo {
   return COLOR_MAP[code] ?? FALLBACK(code);
 }
+
+// 흰 카드 배경 위에 "색 이름을 그 색 자체로" 표시할 때 쓰는 텍스트 색.
+// bg 를 그대로 쓰면 흰/노랑처럼 밝은 색은 흰 배경과 거의 안 보인다(대비 부족).
+// fg(그 색 배경 위에 놓을 대비색)가 LIGHT 라는 건 원색 자체가 충분히 어둡다는
+// 뜻이므로 그대로 써도 되고, fg 가 DARK(원색이 밝다)면 진한 색으로 대체한다.
+export function colorTextOnWhite(code: string): string {
+  const info = colorInfo(code);
+  return info.fg === LIGHT ? info.bg : DARK;
+}

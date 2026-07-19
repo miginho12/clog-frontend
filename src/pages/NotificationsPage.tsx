@@ -5,6 +5,7 @@ import {
   markAllNotificationsRead,
   type Notification,
 } from "../api/client";
+import { avatarGradient } from "../lib/avatarGradient";
 
 // 알림 목록 페이지.
 // 진입 시 목록 로드 + 전체 읽음 처리(read-all).
@@ -74,17 +75,17 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <p className="py-10 text-center text-sm text-gray-400">불러오는 중...</p>
+      <p className="py-10 text-center text-sm text-muted">불러오는 중...</p>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-16 text-center">
-        <p className="text-sm text-red-600">알림을 불러오지 못했습니다.</p>
+      <div className="rounded-card-lg bg-danger-tint px-6 py-16 text-center">
+        <p className="text-sm text-danger">알림을 불러오지 못했습니다.</p>
         <button
           onClick={() => location.reload()}
-          className="mt-3 text-xs text-gray-500 underline"
+          className="mt-3 text-xs font-bold text-secondary underline"
         >
           다시 시도
         </button>
@@ -94,16 +95,24 @@ export default function NotificationsPage() {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
-        <p className="text-sm text-gray-400">아직 알림이 없어요.</p>
+      <div className="flex flex-col items-center px-10 py-20 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-primary-tint">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#B49CF0" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.7 21a1.9 1.9 0 0 1-3.4 0" />
+          </svg>
+        </div>
+        <p className="mt-4 text-[16px] font-extrabold text-title">
+          아직 알림이 없어요
+        </p>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="mb-3 text-lg font-medium text-gray-900">알림</h1>
-      <div className="space-y-1">
+      <span className="text-[16px] font-extrabold text-title">알림</span>
+      <div className="mt-3 flex flex-col gap-1">
         {items.map((n) => (
           <button
             key={n.id}
@@ -118,8 +127,8 @@ export default function NotificationsPage() {
                     : `/feed?start=${n.climbing_log_id}`,
               )
             }
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-gray-50 ${
-              n.is_read ? "" : "bg-[#FAECE7]/40"
+            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${
+              n.is_read ? "" : "bg-primary-tint/50"
             }`}
           >
             {n.actor?.profile_image_url ? (
@@ -129,23 +138,26 @@ export default function NotificationsPage() {
                 className="h-10 w-10 shrink-0 rounded-full object-cover"
               />
             ) : (
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm text-gray-500">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                style={{ background: avatarGradient(n.actor?.id ?? "?") }}
+              >
                 {n.actor?.nickname.slice(0, 1) ?? "?"}
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-gray-800">
-                <span className="font-medium">
+              <p className="text-[13px] text-body">
+                <span className="font-bold text-title">
                   {n.actor?.nickname ?? "알 수 없음"}
                 </span>
                 {actionText(n.type)}
               </p>
-              <p className="mt-0.5 text-xs text-gray-400">
+              <p className="mt-0.5 text-xs text-muted">
                 {timeAgo(n.created_at)}
               </p>
             </div>
             {!n.is_read && (
-              <span className="h-2 w-2 shrink-0 rounded-full bg-[#D85A30]" />
+              <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />
             )}
           </button>
         ))}

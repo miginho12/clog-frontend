@@ -22,7 +22,7 @@ function ColorChip({ code, ...rest }: { code: string } & React.ComponentProps<"s
   const ci = colorInfo(code);
   return (
     <span
-      className="flex h-6 min-w-6 items-center justify-center rounded px-1.5 text-[10px] font-medium"
+      className="flex h-6 min-w-6 items-center justify-center rounded-[7px] px-1.5 text-[10px] font-bold"
       style={{ background: ci.bg, color: ci.fg }}
       {...rest}
     >
@@ -50,6 +50,15 @@ export default function AdminPage() {
   const [editOrder, setEditOrder] = useState<string[]>([]);
   const [editBrandName, setEditBrandName] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+
+  const [query, setQuery] = useState("");
+  const filteredGyms = query.trim()
+    ? gyms.filter((g) =>
+        `${g.gym_name} ${g.brand_name ?? ""}`
+          .toLowerCase()
+          .includes(query.trim().toLowerCase()),
+      )
+    : gyms;
 
   useEffect(() => {
     let alive = true;
@@ -151,181 +160,209 @@ export default function AdminPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-lg font-semibold text-gray-900">관리자</h1>
-      <p className="mb-5 text-xs text-gray-400">
-        암장 색체계를 등록하고 난이도 순서를 관리합니다.
-      </p>
-
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-gray-700">
-          암장 관리 {!loading && `(${gyms.length})`}
-        </h2>
+      <div className="flex items-center justify-between rounded-[18px] bg-title px-5 py-4">
+        <div className="flex items-center gap-2.5">
+          <span className="rounded-[6px] bg-primary px-2 py-[3px] text-[10px] font-extrabold tracking-[.06em] text-white">
+            ADMIN
+          </span>
+          <span className="text-[15px] font-extrabold text-white">암장 관리</span>
+        </div>
         <button
           type="button"
           onClick={() => {
             setShowForm((v) => !v);
             if (showForm) resetForm();
           }}
-          className="rounded-lg bg-[#D85A30] px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
+          className="flex items-center gap-1.5 rounded-[10px] bg-primary px-3.5 py-2 text-white"
         >
-          {showForm ? "취소" : "+ 암장 추가"}
+          <span className="text-[15px] font-bold leading-none">+</span>
+          <span className="text-xs font-bold">{showForm ? "취소" : "암장 추가"}</span>
         </button>
       </div>
 
-      {/* 등록 폼 */}
-      {showForm && (
-        <div className="mb-4 rounded-xl border border-[#D85A30]/30 bg-[#FFF9F6] p-4">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            암장 이름
-          </label>
+      <div className="mt-3.5 flex flex-col gap-3">
+        <div className="flex items-center gap-2 rounded-xl bg-white px-3.5 py-2.5 shadow-[0_2px_8px_rgba(58,52,80,.06)]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9C93B5" strokeWidth="2.2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4-4" />
+          </svg>
           <input
-            value={gymName}
-            onChange={(e) => setGymName(e.target.value)}
-            placeholder="예: 더클라임 강남"
-            className="mb-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#D85A30]"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="암장 검색"
+            className="flex-1 bg-transparent text-[12.5px] text-title outline-none placeholder:text-muted"
           />
-
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            브랜드 <span className="text-gray-400">(선택 — 같은 브랜드 지점끼리 묶어보기)</span>
-          </label>
-          <input
-            value={brandName}
-            onChange={(e) => setBrandName(e.target.value)}
-            placeholder="예: 더클라임"
-            className="mb-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#D85A30]"
-          />
-
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            색 순서 <span className="text-gray-400">(쉬움 → 어려움, 순서대로 클릭)</span>
-          </label>
-
-          {/* 선택된 순서 */}
-          <div className="mb-2 flex min-h-8 flex-wrap items-center gap-1 rounded-lg border border-dashed border-gray-300 bg-white p-2">
-            {order.length === 0 ? (
-              <span className="text-[11px] text-gray-400">
-                아래 팔레트에서 쉬운 색부터 클릭하세요
-              </span>
-            ) : (
-              order.map((c, i) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setOrder((prev) => prev.filter((x) => x !== c))}
-                  title="클릭하면 제거"
-                  className="flex items-center gap-1"
-                >
-                  <span className="text-[10px] text-gray-400">{i + 1}</span>
-                  <ColorChip code={c} />
-                </button>
-              ))
-            )}
-          </div>
-
-          {/* 팔레트 (이미 고른 색은 비활성) */}
-          <div className="mb-3 flex flex-wrap gap-1">
-            {PALETTE.map((c) => {
-              const used = order.includes(c);
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  disabled={used}
-                  onClick={() => setOrder((prev) => [...prev, c])}
-                  className={used ? "opacity-25" : "transition hover:scale-105"}
-                >
-                  <ColorChip code={c} />
-                </button>
-              );
-            })}
-          </div>
-
-          <label className="mb-3 flex items-center gap-2 text-xs text-gray-600">
-            <input
-              type="checkbox"
-              checked={isOfficial}
-              onChange={(e) => setIsOfficial(e.target.checked)}
-              className="accent-[#D85A30]"
-            />
-            공식 암장으로 등록
-          </label>
-
-          {formError && (
-            <p className="mb-2 text-xs text-red-600">{formError}</p>
-          )}
-
-          <button
-            type="button"
-            onClick={handleCreate}
-            disabled={submitting}
-            className="w-full rounded-lg bg-[#D85A30] py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
-          >
-            {submitting ? "등록 중…" : "등록"}
-          </button>
+          <span className="shrink-0 text-[12.5px] text-muted">
+            총 {gyms.length}개
+          </span>
         </div>
-      )}
 
-      {loading && (
-        <p className="py-8 text-center text-sm text-gray-400">불러오는 중…</p>
-      )}
-      {error && <p className="py-8 text-center text-sm text-red-500">{error}</p>}
+        {/* 등록 폼 */}
+        {showForm && (
+          <div className="rounded-[18px] bg-white p-4 shadow-[0_2px_12px_rgba(58,52,80,.07)]">
+            <label className="mb-1.5 block text-xs font-bold text-muted">
+              암장 이름
+            </label>
+            <input
+              value={gymName}
+              onChange={(e) => setGymName(e.target.value)}
+              placeholder="예: 더클라임 강남"
+              className="mb-3 w-full rounded-xl bg-input px-3 py-2.5 text-sm text-title outline-none"
+            />
 
-      <div className="space-y-2">
-        {gyms.map((g) => (
-          <div
-            key={g.id}
-            className="rounded-xl border border-gray-200 bg-white p-4"
-          >
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-900">
-                {g.gym_name}
-              </span>
-              {g.brand_name && (
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
-                  {g.brand_name}
-                </span>
-              )}
-              {g.is_official ? (
-                <span className="rounded-full bg-[#FAECE7] px-2 py-0.5 text-[10px] text-[#D85A30]">
-                  공식
+            <label className="mb-1.5 block text-xs font-bold text-muted">
+              브랜드 <span className="font-normal text-hint">(선택 — 같은 브랜드 지점끼리 묶어보기)</span>
+            </label>
+            <input
+              value={brandName}
+              onChange={(e) => setBrandName(e.target.value)}
+              placeholder="예: 더클라임"
+              className="mb-3 w-full rounded-xl bg-input px-3 py-2.5 text-sm text-title outline-none"
+            />
+
+            <label className="mb-1.5 block text-xs font-bold text-muted">
+              색 순서 <span className="font-normal text-hint">(쉬움 → 어려움, 순서대로 클릭)</span>
+            </label>
+
+            {/* 선택된 순서 */}
+            <div className="mb-2 flex min-h-8 flex-wrap items-center gap-1 rounded-xl border border-dashed border-primary-light bg-input p-2">
+              {order.length === 0 ? (
+                <span className="text-[11px] text-muted">
+                  아래 팔레트에서 쉬운 색부터 클릭하세요
                 </span>
               ) : (
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
-                  사용자 등록
-                </span>
+                order.map((c, i) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setOrder((prev) => prev.filter((x) => x !== c))}
+                    title="클릭하면 제거"
+                    className="flex items-center gap-1"
+                  >
+                    <span className="text-[10px] text-muted">{i + 1}</span>
+                    <ColorChip code={c} />
+                  </button>
+                ))
               )}
+            </div>
+
+            {/* 팔레트 (이미 고른 색은 비활성) */}
+            <div className="mb-3 flex flex-wrap gap-1">
+              {PALETTE.map((c) => {
+                const used = order.includes(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    disabled={used}
+                    onClick={() => setOrder((prev) => [...prev, c])}
+                    className={used ? "opacity-25" : "transition hover:scale-105"}
+                  >
+                    <ColorChip code={c} />
+                  </button>
+                );
+              })}
+            </div>
+
+            <label className="mb-3 flex items-center gap-2 text-xs text-secondary">
+              <input
+                type="checkbox"
+                checked={isOfficial}
+                onChange={(e) => setIsOfficial(e.target.checked)}
+                className="accent-primary"
+              />
+              공식 암장으로 등록
+            </label>
+
+            {formError && (
+              <p className="mb-2 text-xs text-danger">{formError}</p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={submitting}
+              className="bg-primary-gradient w-full rounded-xl py-2.5 text-sm font-bold text-white transition disabled:opacity-50"
+            >
+              {submitting ? "등록 중…" : "등록"}
+            </button>
+          </div>
+        )}
+
+        {loading && (
+          <p className="py-8 text-center text-sm text-muted">불러오는 중…</p>
+        )}
+        {error && <p className="py-8 text-center text-sm text-danger">{error}</p>}
+
+        {!loading && !error && filteredGyms.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted">
+            검색 결과가 없어요
+          </p>
+        )}
+
+        {filteredGyms.map((g) => (
+          <div
+            key={g.id}
+            className="rounded-[18px] bg-white p-4 shadow-[0_2px_12px_rgba(58,52,80,.07)]"
+          >
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[14px] font-extrabold text-title">
+                    {g.gym_name}
+                  </span>
+                  {g.brand_name && (
+                    <span className="rounded-full bg-segment px-2 py-0.5 text-[10px] font-bold text-secondary">
+                      {g.brand_name}
+                    </span>
+                  )}
+                  {g.is_official ? (
+                    <span className="rounded-full bg-primary-tint px-2 py-0.5 text-[10px] font-bold text-primary">
+                      공식
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-segment px-2 py-0.5 text-[10px] font-bold text-secondary">
+                      사용자 등록
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-[11px] text-muted">
+                  컬러 {g.color_order.length}단계
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() =>
                   editId === g.id ? setEditId(null) : startEdit(g)
                 }
-                className="ml-auto text-xs text-gray-400 transition hover:text-gray-700"
+                className="shrink-0 rounded-[9px] bg-primary-tint px-3 py-1.5 text-[11.5px] font-bold text-primary"
               >
                 {editId === g.id ? "취소" : "수정"}
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(g)}
-                className="text-xs text-gray-400 transition hover:text-red-600"
+                className="shrink-0 text-[11.5px] font-bold text-muted transition hover:text-danger"
               >
                 삭제
               </button>
             </div>
 
             {editId === g.id ? (
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-gray-500">
+              <div className="mt-3 border-t border-line pt-3">
+                <label className="mb-1.5 block text-[11px] font-bold text-muted">
                   브랜드 (선택)
                 </label>
                 <input
                   value={editBrandName}
                   onChange={(e) => setEditBrandName(e.target.value)}
                   placeholder="예: 더클라임"
-                  className="mb-2 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs outline-none focus:border-[#D85A30]"
+                  className="mb-2 w-full rounded-xl bg-input px-3 py-2 text-xs text-title outline-none"
                 />
-                <p className="mb-1 text-[11px] text-gray-500">
+                <p className="mb-1.5 text-[11px] text-muted">
                   쉬움 → 어려움 순. 위쪽 색을 클릭하면 제거, 아래 팔레트에서 추가.
                 </p>
-                <div className="mb-2 flex min-h-8 flex-wrap items-center gap-1 rounded-lg border border-dashed border-gray-300 p-2">
+                <div className="mb-2 flex min-h-8 flex-wrap items-center gap-1 rounded-xl border border-dashed border-primary-light bg-input p-2">
                   {editOrder.map((c, i) => (
                     <button
                       key={c}
@@ -336,7 +373,7 @@ export default function AdminPage() {
                       title="클릭하면 제거"
                       className="flex items-center gap-1"
                     >
-                      <span className="text-[10px] text-gray-400">{i + 1}</span>
+                      <span className="text-[10px] text-muted">{i + 1}</span>
                       <ColorChip code={c} />
                     </button>
                   ))}
@@ -361,13 +398,13 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => handleUpdate(g.id)}
                   disabled={editSaving}
-                  className="w-full rounded-lg bg-[#D85A30] py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="bg-primary-gradient w-full rounded-xl py-2 text-xs font-bold text-white transition disabled:opacity-50"
                 >
                   {editSaving ? "저장 중…" : "저장"}
                 </button>
               </div>
             ) : (
-              <div className="flex flex-wrap items-center gap-1">
+              <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-line pt-3">
                 {g.color_order.map((c, i) => (
                   <ColorChip
                     key={`${g.id}-${c}-${i}`}

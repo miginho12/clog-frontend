@@ -9,6 +9,7 @@ import {
 } from "../api/client";
 import { clearTokens } from "../lib/auth";
 import type { AuthUser } from "../lib/auth";
+import { avatarGradient } from "../lib/avatarGradient";
 
 // 계정 설정 (/profile/edit) — 본인 전용.
 // 3개 카드: 프로필 정보 수정 / 비밀번호 변경(local 계정만) / 회원 탈퇴.
@@ -128,19 +129,19 @@ export default function AccountSettingsPage() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
-        <p className="text-sm text-gray-400">불러오는 중...</p>
+      <div className="rounded-card-lg bg-white px-6 py-16 text-center shadow-[0_2px_10px_rgba(90,70,140,.07)]">
+        <p className="text-sm text-muted">불러오는 중...</p>
       </div>
     );
   }
 
   if (loadError || !me) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
-        <p className="text-sm text-gray-600">{loadError ?? "계정 없음"}</p>
+      <div className="rounded-card-lg bg-white px-6 py-16 text-center shadow-[0_2px_10px_rgba(90,70,140,.07)]">
+        <p className="text-sm text-secondary">{loadError ?? "계정 없음"}</p>
         <button
           onClick={() => navigate("/feed")}
-          className="mt-3 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
+          className="mt-3 rounded-pill bg-segment px-4 py-2 text-sm font-bold text-secondary transition"
         >
           피드로 돌아가기
         </button>
@@ -149,143 +150,203 @@ export default function AccountSettingsPage() {
   }
 
   const inputCls =
-    "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#D85A30]";
-  const labelCls = "mb-1 block text-xs font-medium text-gray-600";
+    "w-full rounded-[14px] bg-white px-4 py-3.5 text-[13.5px] font-semibold text-title shadow-[0_2px_10px_rgba(90,70,140,.07)] outline-none placeholder:font-normal placeholder:text-hint";
+  const labelCls = "mb-1.5 block text-xs font-bold text-muted";
+  const initial = me.nickname.charAt(0).toUpperCase();
 
   return (
-    <div className="mx-auto max-w-xl space-y-5">
-      <div className="flex items-center gap-2">
+    <div className="mx-auto max-w-xl">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(`/users/${me.id}`)}
-          className="text-sm text-gray-400 transition hover:text-gray-700"
+          className="text-title"
+          aria-label="뒤로"
         >
-          ← 프로필
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">계정 설정</h1>
+        <span className="text-[16px] font-extrabold text-title">회원정보 수정</span>
       </div>
 
-      {/* ── 프로필 수정 ── */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-3 text-sm font-medium text-gray-700">프로필 정보</h2>
+      <div className="mt-4 space-y-3.5">
+        {/* ── 프로필 수정 ── */}
+        <div className="text-center">
+          {me.profile_image_url ? (
+            <img
+              src={me.profile_image_url}
+              alt={me.nickname}
+              className="mx-auto h-[84px] w-[84px] rounded-full object-cover"
+            />
+          ) : (
+            <div
+              className="mx-auto flex h-[84px] w-[84px] items-center justify-center rounded-full text-[30px] font-extrabold text-white"
+              style={{ background: avatarGradient(me.id) }}
+            >
+              {initial}
+            </div>
+          )}
+        </div>
 
-        <label className={labelCls}>닉네임</label>
-        <input
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          maxLength={50}
-          className={`mb-3 ${inputCls}`}
-        />
-
-        <label className={labelCls}>자기소개</label>
-        <textarea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          maxLength={500}
-          rows={3}
-          placeholder="자기소개를 입력하세요"
-          className={`mb-3 resize-none ${inputCls}`}
-        />
-
-        <label className="mb-3 flex items-center gap-2 text-xs text-gray-600">
+        <div>
+          <label className={labelCls}>닉네임</label>
           <input
-            type="checkbox"
-            checked={isPublic}
-            onChange={(e) => setIsPublic(e.target.checked)}
-            className="accent-[#D85A30]"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            maxLength={50}
+            className={inputCls}
           />
-          프로필 공개 (끄면 다른 사용자에게 프로필이 숨겨집니다)
-        </label>
+        </div>
 
-        {profileErr && <p className="mb-2 text-xs text-red-600">{profileErr}</p>}
+        <div>
+          <label className={labelCls}>소개</label>
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder="자기소개를 입력하세요"
+            className={`resize-none ${inputCls}`}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsPublic((v) => !v)}
+          className="flex w-full items-center gap-3 rounded-[14px] bg-white px-4 py-3.5 text-left shadow-[0_2px_10px_rgba(90,70,140,.07)]"
+        >
+          <span className="flex-1 text-[13.5px] font-semibold text-title">
+            프로필 공개
+          </span>
+          <span className="text-[11px] text-muted">
+            {isPublic ? "전체 공개" : "비공개"}
+          </span>
+          <span
+            className={
+              "relative h-[22px] w-[38px] shrink-0 rounded-pill transition " +
+              (isPublic ? "bg-primary" : "bg-line")
+            }
+          >
+            <span
+              className={
+                "absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white transition-all " +
+                (isPublic ? "right-0.5" : "left-0.5")
+              }
+            />
+          </span>
+        </button>
+
+        {profileErr && (
+          <p className="rounded-2xl bg-danger-tint px-4 py-3 text-sm text-danger">
+            {profileErr}
+          </p>
+        )}
         {profileMsg && (
-          <p className="mb-2 text-xs text-green-600">{profileMsg}</p>
+          <p className="rounded-2xl bg-success-tint px-4 py-3 text-sm text-success">
+            {profileMsg}
+          </p>
         )}
 
         <button
           type="button"
           onClick={handleSaveProfile}
           disabled={savingProfile}
-          className="w-full rounded-lg bg-[#D85A30] py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+          className="bg-primary-gradient w-full rounded-2xl py-[15px] text-[14.5px] font-extrabold text-white shadow-[0_8px_20px_rgba(124,92,216,.3)] transition disabled:opacity-60"
         >
           {savingProfile ? "저장 중…" : "저장"}
         </button>
-      </div>
 
-      {/* ── 비밀번호 변경 (local 계정만) ── */}
-      {isLocal && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-3 text-sm font-medium text-gray-700">
-            비밀번호 변경
-          </h2>
+        {/* ── 비밀번호 변경 (local 계정만) ── */}
+        {isLocal && (
+          <div className="space-y-3.5 border-t border-line pt-4">
+            <span className="block text-[13px] font-extrabold text-title">
+              비밀번호 변경
+            </span>
 
-          <label className={labelCls}>현재 비밀번호</label>
-          <input
-            type="password"
-            value={curPw}
-            onChange={(e) => setCurPw(e.target.value)}
-            className={`mb-3 ${inputCls}`}
-          />
+            <div>
+              <label className={labelCls}>현재 비밀번호</label>
+              <input
+                type="password"
+                value={curPw}
+                onChange={(e) => setCurPw(e.target.value)}
+                className={inputCls}
+              />
+            </div>
 
-          <label className={labelCls}>새 비밀번호</label>
-          <input
-            type="password"
-            value={newPw}
-            onChange={(e) => setNewPw(e.target.value)}
-            placeholder="12자 이상, 영문·숫자·특수문자 포함"
-            className={`mb-3 ${inputCls}`}
-          />
+            <div>
+              <label className={labelCls}>새 비밀번호</label>
+              <input
+                type="password"
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+                placeholder="12자 이상, 영문·숫자·특수문자 포함"
+                className={inputCls}
+              />
+            </div>
 
-          <label className={labelCls}>새 비밀번호 확인</label>
-          <input
-            type="password"
-            value={newPw2}
-            onChange={(e) => setNewPw2(e.target.value)}
-            className={`mb-3 ${inputCls}`}
-          />
+            <div>
+              <label className={labelCls}>새 비밀번호 확인</label>
+              <input
+                type="password"
+                value={newPw2}
+                onChange={(e) => setNewPw2(e.target.value)}
+                className={inputCls}
+              />
+            </div>
 
-          {pwErr && <p className="mb-2 text-xs text-red-600">{pwErr}</p>}
-          {pwMsg && <p className="mb-2 text-xs text-green-600">{pwMsg}</p>}
+            {pwErr && (
+              <p className="rounded-2xl bg-danger-tint px-4 py-3 text-sm text-danger">
+                {pwErr}
+              </p>
+            )}
+            {pwMsg && (
+              <p className="rounded-2xl bg-success-tint px-4 py-3 text-sm text-success">
+                {pwMsg}
+              </p>
+            )}
 
+            <button
+              type="button"
+              onClick={handleChangePassword}
+              disabled={savingPw || !curPw || !newPw || !newPw2}
+              className="w-full rounded-2xl bg-title py-[15px] text-[14.5px] font-extrabold text-white transition disabled:opacity-50"
+            >
+              {savingPw ? "변경 중…" : "비밀번호 변경"}
+            </button>
+          </div>
+        )}
+
+        {/* ── 회원 탈퇴 ── */}
+        <div className="rounded-[18px] border border-danger-line bg-danger-tint p-4">
+          <p className="text-[13px] font-extrabold text-danger">회원 탈퇴</p>
+          <p className="mt-1 text-[11.5px] leading-[1.55] text-danger/70">
+            탈퇴하면 계정이 비활성화되고 다시 로그인할 수 없습니다. 모든 클라이밍
+            기록·점수·팔로우 관계는 복구할 수 없어요.
+          </p>
           <button
             type="button"
-            onClick={handleChangePassword}
-            disabled={savingPw || !curPw || !newPw || !newPw2}
-            className="w-full rounded-lg bg-gray-800 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+            onClick={() => setShowDelete(true)}
+            className="mt-3 w-full rounded-xl border-[1.5px] border-danger/20 bg-white py-[11px] text-[13px] font-extrabold text-danger"
           >
-            {savingPw ? "변경 중…" : "비밀번호 변경"}
+            탈퇴하기
           </button>
         </div>
-      )}
-
-      {/* ── 회원 탈퇴 ── */}
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-        <h2 className="mb-1 text-sm font-medium text-red-700">회원 탈퇴</h2>
-        <p className="mb-3 text-xs text-gray-600">
-          탈퇴하면 계정이 비활성화되고 다시 로그인할 수 없습니다.
-        </p>
-        <button
-          type="button"
-          onClick={() => setShowDelete(true)}
-          className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100"
-        >
-          회원 탈퇴
-        </button>
       </div>
 
       {/* ── 탈퇴 확인 모달 ── */}
       {showDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6">
-            <h3 className="mb-2 text-base font-semibold text-gray-900">
+          <div className="w-full max-w-sm rounded-card-lg bg-white p-6">
+            <h3 className="mb-2 text-base font-extrabold text-title">
               정말 탈퇴하시겠어요?
             </h3>
-            <p className="mb-4 text-sm text-gray-600">
+            <p className="mb-4 text-sm text-secondary">
               이 작업은 되돌릴 수 없습니다. 계정이 즉시 비활성화되고 모든 기기에서
               로그아웃됩니다.
             </p>
 
             {deleteErr && (
-              <p className="mb-3 text-xs text-red-600">{deleteErr}</p>
+              <p className="mb-3 text-xs text-danger">{deleteErr}</p>
             )}
 
             <div className="flex gap-2">
@@ -296,7 +357,7 @@ export default function AccountSettingsPage() {
                   setDeleteErr(null);
                 }}
                 disabled={deleting}
-                className="flex-1 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                className="flex-1 rounded-2xl bg-segment py-2.5 text-sm font-bold text-secondary transition disabled:opacity-50"
               >
                 취소
               </button>
@@ -304,7 +365,7 @@ export default function AccountSettingsPage() {
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                className="flex-1 rounded-2xl bg-danger py-2.5 text-sm font-bold text-white transition disabled:opacity-50"
               >
                 {deleting ? "처리 중…" : "탈퇴하기"}
               </button>

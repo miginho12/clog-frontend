@@ -31,11 +31,11 @@ export default function AuthCallbackPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-        <p className="text-sm text-red-600">{error}</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-page-gradient px-4">
+        <p className="text-sm text-danger">{error}</p>
         <button
           onClick={() => navigate("/login", { replace: true })}
-          className="mt-4 rounded-lg bg-[#D85A30] px-6 py-2 text-sm font-medium text-white"
+          className="bg-primary-gradient mt-4 rounded-2xl px-6 py-3 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(124,92,216,.3)]"
         >
           로그인으로 돌아가기
         </button>
@@ -44,8 +44,8 @@ export default function AuthCallbackPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <p className="text-sm text-gray-400">로그인 처리 중...</p>
+    <div className="flex min-h-screen items-center justify-center bg-page-gradient">
+      <p className="text-sm text-muted">로그인 처리 중...</p>
     </div>
   );
 }

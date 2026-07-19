@@ -13,6 +13,7 @@ import {
 } from "../api/client";
 import { isAuthenticated } from "../lib/auth";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { avatarGradient } from "../lib/avatarGradient";
 
 // 게시물 상세의 댓글 영역.
 // 스레드 렌더(최상위 + 대댓글 들여쓰기) + 작성 + 대댓글 + 삭제.
@@ -90,46 +91,49 @@ function CommentRow({
               className="h-8 w-8 rounded-full object-cover"
             />
           ) : (
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
+              style={{ background: avatarGradient(c.author?.id ?? "?") }}
+            >
               {c.author?.nickname.slice(0, 1) ?? "?"}
             </span>
           )}
         </button>
         <div className="min-w-0 flex-1">
-          <div className="rounded-2xl bg-gray-50 px-3 py-2">
+          <div className="rounded-2xl bg-input px-3 py-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-800">
+              <span className="text-sm font-bold text-title">
                 {c.author?.nickname ?? "알 수 없음"}
               </span>
               {c.is_pinned && (
-                <span className="rounded bg-[#FAECE7] px-1.5 py-0.5 text-[10px] font-medium text-[#D85A30]">
+                <span className="rounded bg-primary-tint px-1.5 py-0.5 text-[10px] font-bold text-primary">
                   고정
                 </span>
               )}
             </div>
-            <p className="mt-0.5 whitespace-pre-wrap text-sm text-gray-700">
+            <p className="mt-0.5 whitespace-pre-wrap text-sm text-body">
               {c.content}
             </p>
           </div>
-          <div className="mt-1 flex items-center gap-3 px-1 text-xs text-gray-400">
+          <div className="mt-1 flex items-center gap-3 px-1 text-xs text-muted">
             <span>{timeAgo(c.created_at)}</span>
             <button
               onClick={toggleLike}
               disabled={likePending}
-              className="flex items-center gap-1 font-medium hover:text-gray-600 disabled:opacity-60"
+              className="flex items-center gap-1 font-semibold hover:text-secondary disabled:opacity-60"
             >
               <svg
                 width="13"
                 height="13"
                 viewBox="0 0 24 24"
-                fill={liked ? "#D85A30" : "none"}
-                stroke={liked ? "#D85A30" : "currentColor"}
+                fill={liked ? "#E86A5C" : "none"}
+                stroke={liked ? "#E86A5C" : "currentColor"}
                 strokeWidth="2.2"
               >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
               {likeCount > 0 && (
-                <span className={liked ? "text-[#D85A30]" : ""}>
+                <span className={liked ? "text-accent" : ""}>
                   {likeCount}
                 </span>
               )}
@@ -137,7 +141,7 @@ function CommentRow({
             {onReply && (
               <button
                 onClick={() => onReply(c)}
-                className="font-medium hover:text-gray-600"
+                className="font-semibold hover:text-secondary"
               >
                 답글
               </button>
@@ -145,7 +149,7 @@ function CommentRow({
             {c.is_mine && (
               <button
                 onClick={() => onDelete(c.id)}
-                className="font-medium hover:text-red-500"
+                className="font-semibold hover:text-danger"
               >
                 삭제
               </button>
@@ -153,7 +157,7 @@ function CommentRow({
             {!c.is_mine && isAdmin && (
               <button
                 onClick={() => onDelete(c.id)}
-                className="font-medium text-red-500 hover:text-red-600"
+                className="font-semibold text-danger hover:opacity-80"
                 title="관리자 권한으로 삭제"
               >
                 관리자 삭제
@@ -162,7 +166,7 @@ function CommentRow({
             {c.can_pin && !isReply && onPin && (
               <button
                 onClick={() => onPin(c)}
-                className="font-medium hover:text-[#D85A30]"
+                className="font-semibold hover:text-primary"
               >
                 {c.is_pinned ? "고정 해제" : "고정"}
               </button>
@@ -250,17 +254,19 @@ export default function CommentSection({
   return (
     <div
       className={
-        bare ? "px-4 py-2" : "rounded-2xl border border-gray-200 bg-white p-5"
+        bare
+          ? "px-4 py-2"
+          : "rounded-card-lg bg-white p-5 shadow-[0_4px_20px_rgba(90,70,140,.07)]"
       }
     >
-      <h2 className="text-sm font-medium text-gray-900">
-        댓글 {total > 0 && <span className="text-gray-500">{total}</span>}
+      <h2 className="text-[13px] font-extrabold text-title">
+        댓글 {total > 0 && <span className="text-muted">{total}</span>}
       </h2>
 
       {loading ? (
-        <p className="py-6 text-center text-sm text-gray-400">불러오는 중...</p>
+        <p className="py-6 text-center text-sm text-muted">불러오는 중...</p>
       ) : threads.length === 0 ? (
-        <p className="py-6 text-center text-sm text-gray-400">
+        <p className="py-6 text-center text-sm text-muted">
           첫 댓글을 남겨보세요.
         </p>
       ) : (
@@ -288,22 +294,22 @@ export default function CommentSection({
         </div>
       )}
 
-      <div className="mt-4 border-t border-gray-100 pt-4">
+      <div className="mt-4 border-t border-line pt-4">
         {replyTo && (
-          <div className="mb-2 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 text-xs text-gray-600">
+          <div className="mb-2 flex items-center justify-between rounded-input bg-input px-3 py-1.5 text-xs text-secondary">
             <span>
-              <span className="font-medium">{replyTo.author?.nickname}</span>
+              <span className="font-bold">{replyTo.author?.nickname}</span>
               님에게 답글
             </span>
             <button
               onClick={() => setReplyTo(null)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-muted hover:text-secondary"
             >
               취소
             </button>
           </div>
         )}
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2.5 rounded-pill bg-input px-4 py-2.5">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -312,15 +318,18 @@ export default function CommentSection({
                 handleSubmit();
               }
             }}
-            placeholder={replyTo ? "답글 달기..." : "댓글 달기..."}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#D85A30]"
+            placeholder={replyTo ? "답글 달기..." : "댓글 남기기…"}
+            className="min-w-0 flex-1 bg-transparent text-[12.5px] text-title outline-none placeholder:text-muted"
           />
           <button
             onClick={handleSubmit}
             disabled={submitting || !text.trim()}
-            className="rounded-lg bg-[#D85A30] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            aria-label="댓글 등록"
+            className="shrink-0 disabled:opacity-40"
           >
-            등록
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C5CD8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m22 2-7 20-4-9-9-4z" />
+            </svg>
           </button>
         </div>
       </div>

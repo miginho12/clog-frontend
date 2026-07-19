@@ -26,31 +26,31 @@ export default function VerifyPage() {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-page-gradient px-8 text-center">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-[0_2px_10px_rgba(90,70,140,.07)]">
         {status === "loading" && (
           <>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#FAECE7] text-2xl">
+            <div className="bg-hero-gradient mx-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl">
               🧗
             </div>
-            <p className="mt-4 text-sm text-gray-500">인증 중이에요...</p>
+            <p className="mt-4 text-sm text-secondary">인증 중이에요...</p>
           </>
         )}
 
         {status === "success" && (
           <>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-2xl">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success-tint text-2xl">
               ✅
             </div>
-            <h1 className="mt-4 text-lg font-medium text-gray-900">
+            <h1 className="mt-4 text-lg font-extrabold text-title">
               이메일 인증 완료!
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            <p className="mt-2 text-sm leading-relaxed text-secondary">
               이제 Clog에 로그인할 수 있어요.
             </p>
             <Link
               to="/login"
-              className="mt-6 inline-block w-full rounded-lg bg-[#D85A30] py-2.5 text-sm font-medium text-white transition hover:bg-[#c24d27]"
+              className="bg-primary-gradient mt-6 inline-block w-full rounded-2xl py-3.5 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(124,92,216,.3)]"
             >
               로그인하러 가기
             </Link>
@@ -59,20 +59,20 @@ export default function VerifyPage() {
 
         {status === "failed" && (
           <>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-danger-tint text-2xl">
               ⚠️
             </div>
-            <h1 className="mt-4 text-lg font-medium text-gray-900">
+            <h1 className="mt-4 text-lg font-extrabold text-title">
               인증에 실패했어요
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            <p className="mt-2 text-sm leading-relaxed text-secondary">
               인증 링크가 만료되었거나 유효하지 않아요.
               <br />
               다시 회원가입하거나 로그인해 주세요.
             </p>
             <Link
               to="/login"
-              className="mt-6 inline-block w-full rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="mt-6 inline-block w-full rounded-2xl bg-segment py-3.5 text-sm font-bold text-title"
             >
               로그인 화면으로
             </Link>

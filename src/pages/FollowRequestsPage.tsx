@@ -7,6 +7,7 @@ import {
   ApiError,
   type FollowUserItem,
 } from "../api/client";
+import { avatarGradient } from "../lib/avatarGradient";
 
 // 팔로우 요청 화면 (/follow-requests) — 비공개 계정에게 온 pending 요청 관리.
 export default function FollowRequestsPage() {
@@ -53,40 +54,39 @@ export default function FollowRequestsPage() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
-        <p className="text-sm text-gray-400">불러오는 중...</p>
+      <div className="rounded-card-lg bg-white px-6 py-16 text-center shadow-[0_2px_10px_rgba(90,70,140,.07)]">
+        <p className="text-sm text-muted">불러오는 중...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-sm text-gray-400 transition hover:text-gray-700"
-        >
-          ←
+    <div>
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="text-title" aria-label="뒤로">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">팔로우 요청</h1>
+        <span className="text-[16px] font-extrabold text-title">팔로우 요청</span>
       </div>
 
-      {error && <p className="py-8 text-center text-sm text-red-500">{error}</p>}
+      {error && <p className="py-8 text-center text-sm text-danger">{error}</p>}
 
       {!error && items.length === 0 && (
-        <p className="py-12 text-center text-sm text-gray-400">
+        <p className="py-12 text-center text-sm text-muted">
           받은 팔로우 요청이 없어요.
         </p>
       )}
 
-      <div className="space-y-1">
+      <div className="mt-3.5 flex flex-col gap-2">
         {items.map((u) => {
           const initial = (u.nickname ?? "?").charAt(0).toUpperCase();
           const busy = busyId === u.id;
           return (
             <div
               key={u.id}
-              className="flex items-center gap-3 rounded-xl px-2 py-2"
+              className="flex items-center gap-3 rounded-card-lg bg-white px-4 py-3 shadow-[0_2px_12px_rgba(90,70,140,.06)]"
             >
               <button
                 onClick={() => navigate(`/users/${u.id}`)}
@@ -99,11 +99,14 @@ export default function FollowRequestsPage() {
                     className="h-11 w-11 shrink-0 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FAECE7] text-base font-medium text-[#D85A30]">
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
+                    style={{ background: avatarGradient(u.id) }}
+                  >
                     {initial}
                   </div>
                 )}
-                <span className="truncate text-sm font-medium text-gray-900">
+                <span className="truncate text-[13.5px] font-bold text-title">
                   {u.nickname}
                 </span>
               </button>
@@ -112,7 +115,7 @@ export default function FollowRequestsPage() {
                   type="button"
                   onClick={() => handle(u.id, true)}
                   disabled={busy}
-                  className="rounded-lg bg-[#D85A30] px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="rounded-pill bg-primary px-3.5 py-1.5 text-xs font-bold text-white transition disabled:opacity-50"
                 >
                   수락
                 </button>
@@ -120,7 +123,7 @@ export default function FollowRequestsPage() {
                   type="button"
                   onClick={() => handle(u.id, false)}
                   disabled={busy}
-                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+                  className="rounded-pill bg-segment px-3.5 py-1.5 text-xs font-bold text-secondary transition disabled:opacity-50"
                 >
                   거절
                 </button>

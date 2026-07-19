@@ -174,6 +174,53 @@ export async function localLogin(params: {
   return handleResponse<AuthResponse>(res);
 }
 
+// ── 이메일 중복 확인 (회원가입 폼) ──
+export async function checkEmailAvailable(email: string): Promise<boolean> {
+  const res = await fetch(
+    `${API_BASE_URL}/auth/check-email?email=${encodeURIComponent(email)}`,
+  );
+  const data = await handleResponse<{ available: boolean }>(res);
+  return data.available;
+}
+
+// ── 비밀번호 찾기 (6자리 코드) ──
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/auth/password-reset/request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  await handleResponse<{ message: string }>(res);
+}
+
+export async function verifyPasswordResetCode(
+  email: string,
+  code: string,
+): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/auth/password-reset/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, code }),
+  });
+  const data = await handleResponse<{ reset_token: string }>(res);
+  return data.reset_token;
+}
+
+export async function confirmPasswordReset(
+  resetToken: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/auth/password-reset/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reset_token: resetToken, new_password: newPassword }),
+  });
+  if (!res.ok) {
+    // 204 는 ok 라 통과, 그 외만 에러 파싱
+    return handleResponse<void>(res);
+  }
+}
+
 // ── 내 정보 조회 (인증 필요) ──
 export async function getMe(): Promise<AuthUser> {
   const res = await authFetch(`${API_BASE_URL}/users/me`);
@@ -673,6 +720,21 @@ export async function listClimbingLogs(
   const query = qs.toString() ? `?${qs.toString()}` : "";
   const res = await authFetch(`${API_BASE_URL}/climbing-logs${query}`);
   return handleResponse<ClimbingLogListResponse>(res);
+}
+
+// ── 인기 태그 집계 (검색 탭 발견용, 공개 — 비로그인도 조회 가능) ──
+export interface CategoryCount {
+  tag: string;
+  count: number;
+}
+
+export async function getPopularCategories(
+  limit = 10,
+): Promise<CategoryCount[]> {
+  const res = await fetch(
+    `${API_BASE_URL}/climbing-logs/meta/categories/popular?limit=${limit}`,
+  );
+  return handleResponse<CategoryCount[]>(res);
 }
 
 // ── 작성 (인증) ──

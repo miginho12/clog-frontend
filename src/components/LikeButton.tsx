@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { likePost, unlikePost, ApiError } from "../api/client";
 import { isAuthenticated } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
+import { TRANSITION_BOUNCE } from "../lib/motion";
 
 // 좋아요 버튼 — 낙관적 토글.
 // 누르는 즉시 UI 반영, API 실패 시 롤백.
@@ -59,19 +61,20 @@ export default function LikeButton({
       className="flex items-center gap-1.5 text-sm transition disabled:opacity-60"
       aria-label={liked ? "좋아요 취소" : "좋아요"}
     >
-      <svg
+      <motion.svg
         width="22"
         height="22"
         viewBox="0 0 24 24"
-        fill={liked ? "#D85A30" : "none"}
-        stroke={liked ? "#D85A30" : "#9CA3AF"}
+        fill={liked ? "#E86A5C" : "none"}
+        stroke={liked ? "#E86A5C" : "#5B6068"}
         strokeWidth="2"
-        className="transition"
+        animate={{ scale: liked ? 1.18 : 1 }}
+        transition={TRANSITION_BOUNCE}
       >
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-      </svg>
+      </motion.svg>
       {count > 0 && (
-        <span className={liked ? "text-[#D85A30]" : "text-gray-500"}>
+        <span className="text-[13px] font-semibold text-secondary">
           {count}
         </span>
       )}

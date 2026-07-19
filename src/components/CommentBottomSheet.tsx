@@ -85,7 +85,7 @@ export default function CommentBottomSheet({
       />
 
       <div
-        className="relative flex h-[80vh] w-full max-w-md flex-col rounded-t-2xl bg-white"
+        className="relative flex h-[80vh] w-full max-w-md flex-col rounded-t-sheet bg-white"
         style={{
           transform: visible
             ? `translateY(${dragY}px)`
@@ -97,7 +97,7 @@ export default function CommentBottomSheet({
       >
         {/* 핸들바 + 헤더 (여기서 드래그 시작) */}
         <div
-          className="relative flex shrink-0 cursor-grab items-center justify-between border-b border-gray-100 px-5 py-3 active:cursor-grabbing"
+          className="relative flex shrink-0 cursor-grab flex-col items-center border-b border-line px-5 pb-3 pt-3 active:cursor-grabbing"
           onTouchStart={(e) => onDragStart(e.touches[0].clientY)}
           onTouchMove={(e) => onDragMove(e.touches[0].clientY)}
           onTouchEnd={onDragEnd}
@@ -106,17 +106,19 @@ export default function CommentBottomSheet({
           onMouseUp={onDragEnd}
           onMouseLeave={onDragEnd}
         >
-          <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-gray-300" />
-          <span className="text-sm font-medium text-gray-900">댓글</span>
-          <button
-            onClick={() => onClose(logId)}
-            className="flex h-6 w-6 items-center justify-center text-gray-400 hover:text-gray-600"
-            aria-label="닫기"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="mb-3 h-[5px] w-10 rounded-full bg-line" />
+          <div className="flex w-full items-center justify-between">
+            <span className="text-[13px] font-extrabold text-title">댓글</span>
+            <button
+              onClick={() => onClose(logId)}
+              className="flex h-6 w-6 items-center justify-center text-hint"
+              aria-label="닫기"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* 댓글 본문 (스크롤) */}

@@ -1,1 +1,103 @@
 @import "tailwindcss";
+
+@theme {
+  /* Primary / Accent */
+  --color-primary: #7c5cd8;
+  --color-primary-soft: #9b6ce0;
+  --color-primary-light: #b49cf0;
+  --color-primary-tint: #f1ecfb;
+  --color-accent: #e86a5c;
+
+  /* Text */
+  --color-title: #3a3450;
+  --color-body: #4a4361;
+  --color-secondary: #5c5478;
+  --color-muted: #9c93b5;
+  --color-hint: #c5bdd9;
+
+  /* Surface */
+  --color-page-from: #f7f4fb;
+  --color-page-to: #f2eff8;
+  --color-input: #f7f5fb;
+  --color-segment: #f1eff6;
+  --color-line: #ebe7f4;
+
+  /* Semantic */
+  --color-success: #1e9e4b;
+  --color-success-tint: #edf8ef;
+  --color-danger: #c94f3d;
+  --color-danger-tint: #fdf3f1;
+  --color-danger-line: #f5dcd6;
+  --color-kakao: #fee500;
+  --color-kakao-text: #3a2929;
+  --color-admin: #3a3450;
+
+  /* Chart scale (연보라 -> 진보라) */
+  --color-chart-1: #ebe4f8;
+  --color-chart-2: #d9ccf3;
+  --color-chart-3: #c0aaec;
+  --color-chart-4: #9b7ce0;
+
+  /* Font */
+  --font-sans:
+    "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui,
+    sans-serif;
+
+  /* Radius */
+  --radius-input: 14px;
+  --radius-card: 22px;
+  --radius-card-lg: 24px;
+  --radius-sheet: 28px;
+  --radius-pill: 999px;
+  --radius-tile: 14px;
+
+  /* Shadow */
+  --shadow-card: 0 4px 20px rgba(90, 70, 140, 0.07);
+  --shadow-card-sm: 0 2px 12px rgba(90, 70, 140, 0.06);
+  --shadow-float: 0 10px 30px rgba(90, 70, 140, 0.16);
+  --shadow-overlay: 0 16px 40px rgba(90, 70, 140, 0.22);
+  --shadow-glow: 0 8px 20px rgba(124, 92, 216, 0.3);
+
+  /* Easing (스프링 느낌 — CSS transition-timing-function 용) */
+  --ease-spring: cubic-bezier(0.22, 1.15, 0.36, 1);
+  --ease-spring-bounce: cubic-bezier(0.2, 2.2, 0.4, 1);
+  --ease-pill: cubic-bezier(0.22, 1.3, 0.36, 1);
+}
+
+/* 배경 그라디언트 / 프리텐다드 폰트 적용 */
+body {
+  background: linear-gradient(170deg, var(--color-page-from), var(--color-page-to));
+  font-family: var(--font-sans);
+  color: var(--color-body);
+}
+
+/* 재사용 그라디언트 (Tailwind 유틸에 없는 값이라 커스텀 유틸로 등록) */
+@utility bg-primary-gradient {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-soft));
+}
+
+@utility bg-hero-gradient {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+}
+
+@utility bg-chart-last {
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+}
+
+@utility bg-page-gradient {
+  background: linear-gradient(170deg, var(--color-page-from), var(--color-page-to));
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@utility animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}

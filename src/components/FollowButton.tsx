@@ -39,17 +39,17 @@ export default function FollowButton({
     }
   }
 
-  const pad = size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm";
+  const pad = size === "sm" ? "px-3.5 py-1.5 text-xs" : "px-4 py-2 text-[12.5px]";
 
   return (
     <button
       onClick={toggle}
       disabled={loading}
       className={
-        `rounded-lg font-medium transition ${pad} ` +
+        `rounded-pill font-bold transition ${pad} ` +
         (following
-          ? "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-          : "bg-[#D85A30] text-white hover:bg-[#c24d27]") +
+          ? "bg-segment text-secondary"
+          : "bg-primary text-white") +
         (loading ? " opacity-60" : "")
       }
     >

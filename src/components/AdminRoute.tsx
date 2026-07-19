@@ -11,7 +11,7 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="py-16 text-center text-sm text-gray-400">확인 중…</div>
+      <div className="py-16 text-center text-sm text-muted">확인 중…</div>
     );
   }
   if (!user) {

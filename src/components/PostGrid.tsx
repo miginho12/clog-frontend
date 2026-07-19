@@ -9,8 +9,8 @@ import { colorInfo } from "../lib/colorMap";
 function GradeTile({ log }: { log: ClimbingLog }) {
   const isVScale = log.grade_system === "v_scale";
   const ci = isVScale ? null : colorInfo(log.grade_raw);
-  const bg = ci?.bg ?? "#FAECE7";
-  const fg = ci?.fg ?? "#D85A30";
+  const bg = ci?.bg ?? "#7C5CD8";
+  const fg = ci?.fg ?? "#ffffff";
   return (
     <div
       className="flex h-full w-full items-center justify-center"
@@ -34,19 +34,19 @@ export default function PostGrid({
 
   if (logs.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
-        <p className="text-sm text-gray-500">아직 게시물이 없어요.</p>
+      <div className="rounded-card-lg bg-white px-6 py-12 text-center shadow-[0_2px_12px_rgba(90,70,140,.06)]">
+        <p className="text-sm text-muted">아직 게시물이 없어요.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-3 gap-1 sm:gap-2">
+    <div className="grid grid-cols-3 gap-1.5">
       {logs.map((log) => (
         <button
           key={log.id}
           onClick={() => navigate(`/users/${userId}/posts?start=${log.id}`)}
-          className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 transition hover:opacity-90"
+          className="relative aspect-square overflow-hidden rounded-tile bg-segment transition hover:opacity-90"
         >
           {log.media_url ? (
             log.media_type === "video" ? (

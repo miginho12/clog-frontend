@@ -90,7 +90,7 @@ export default function AutoPlayVideo({ src }: { src: string }) {
 
   return (
     <div
-      className="group relative w-full overflow-hidden rounded-lg border border-gray-200 bg-black"
+      className="group relative w-full overflow-hidden rounded-2xl bg-black"
       style={{ aspectRatio: ratio }}
     >
       <video

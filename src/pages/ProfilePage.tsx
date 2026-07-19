@@ -22,8 +22,8 @@ export default function ProfilePage() {
   }, [navigate]);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
-      <p className="text-sm text-gray-400">불러오는 중...</p>
+    <div className="rounded-card-lg bg-white px-6 py-16 text-center shadow-[0_2px_10px_rgba(90,70,140,.07)]">
+      <p className="text-sm text-muted">불러오는 중...</p>
     </div>
   );
 }

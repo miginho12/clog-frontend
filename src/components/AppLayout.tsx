@@ -10,10 +10,10 @@ import {
 import { isAuthenticated } from "../lib/auth";
 import { getUnreadCount } from "../api/client";
 import { useNavDirection } from "../lib/navDirection";
+import { TRANSITION_PILL, TRANSITION_SHEET, TRANSITION_TAB } from "../lib/motion";
 
-// 모바일 웹 규격 셸 (토스/무신사 스타일).
-// PC/모바일 동일 뷰: 고정 너비(max-w-md) 중앙 컨테이너.
-// 상단 = 로고 + 로그인/로그아웃, 하단 = 탭바.
+// 모바일 웹 규격 셸. PC/모바일 동일 뷰: 고정 너비(max-w-md) 중앙 컨테이너.
+// 상단 = 로고 + 기록하기/알림, 하단 = 플로팅 탭바(피드/그레이드/검색/프로필).
 
 const TABS = [
   { to: "/feed", label: "피드", auth: false, icon: HomeIcon },
@@ -136,50 +136,52 @@ export default function AppLayout() {
     else goByDelta(-1); // 왼→오른 = 이전
   }
 
+  const activeIdx = currentIndex();
+
+  // 기록 작성(/feed/new)·수정(/feed/edit/:id) 화면은 바텀시트 스타일로 취급.
+  const isSheet =
+    location.pathname === "/feed/new" ||
+    location.pathname.startsWith("/feed/edit/");
+
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-segment">
       {/* 모바일 규격 컨테이너 (PC 에서 가운데 폰 화면) */}
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-gray-50 shadow-sm">
+      <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-page-gradient shadow-sm">
         {/* 상단 헤더 */}
-        <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/90 backdrop-blur">
+        <header className="sticky top-0 z-10 bg-white/85 backdrop-blur-md">
           <div className="grid h-14 grid-cols-3 items-center px-4">
-            {/* 좌: 기록 추가 (+) */}
-            <div className="flex justify-start">
-              {authed && (
-                <button
-                  onClick={() => navigate("/feed/new")}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-700 transition hover:bg-gray-100"
-                  aria-label="기록하기"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </button>
-              )}
-            </div>
+            {/* 좌: 여백 (로고 중앙 정렬용) */}
+            <div />
 
             {/* 중앙: 로고 */}
             <NavLink to="/feed" className="flex items-center justify-center gap-1.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FAECE7] text-base">
-                🧗
+              <span className="text-[22px] font-extrabold tracking-[-0.5px] text-title">
+                Clog
               </span>
-              <span className="text-lg font-medium text-gray-900">Clog</span>
+              <span className="h-[7px] w-[7px] rounded-full bg-primary" />
             </NavLink>
 
-            {/* 우: 알림 (준비 중) */}
-            <div className="flex justify-end">
+            {/* 우: 기록하기(+) / 알림 */}
+            <div className="flex items-center justify-end gap-2">
+              {authed && (
+                <button
+                  onClick={() => navigate("/feed/new")}
+                  className="bg-primary-gradient flex h-9 w-9 items-center justify-center rounded-xl text-[19px] font-semibold text-white shadow-[0_4px_12px_rgba(124,92,216,.35)] transition active:scale-95"
+                  aria-label="기록하기"
+                >
+                  +
+                </button>
+              )}
               {authed && (
                 <button
                   onClick={() => navigate("/notifications")}
-                  className="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 transition hover:bg-gray-100"
+                  className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-[0_2px_8px_rgba(90,70,140,.08)] transition active:scale-95"
                   aria-label="알림"
                 >
                   {unreadCount > 0 && (
-                    <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D85A30] px-1 text-[10px] font-medium text-white">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
+                    <span className="absolute right-2 top-2 h-[7px] w-[7px] rounded-full border-[1.5px] border-white bg-accent" />
                   )}
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3A3450" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
                     <path d="M13.7 21a1.9 1.9 0 0 1-3.4 0" />
                   </svg>
@@ -200,90 +202,122 @@ export default function AppLayout() {
           }
         >
           <AnimatePresence initial={false} mode="popLayout" custom={getDirection()}>
-            <motion.div
-              key={screenKey()}
-              custom={getDirection()}
-              variants={{
-                enter: (dir: number) => ({
-                  x: dir > 0 ? "100%" : "-100%",
-                }),
-                center: { x: 0 },
-                exit: (dir: number) => ({
-                  x: dir > 0 ? "-100%" : "100%",
-                }),
-              }}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.28, ease: "easeOut" }}
-              className="min-h-full px-4 py-6 pb-24"
-            >
-              {outlet}
-            </motion.div>
+            {isSheet ? (
+              // 기록 작성/수정 — 바텀시트처럼 아래에서 위로 슬라이드.
+              // 진짜 오버레이는 아니라(탭과 같은 스와이프 스택에 속한 페이지)
+              // 스크림은 없지만, 등장/퇴장 방향만큼은 시트 느낌을 낸다.
+              <motion.div
+                key={screenKey()}
+                variants={{
+                  enter: { y: "100%" },
+                  center: { y: 0 },
+                  exit: { y: "100%" },
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={TRANSITION_SHEET}
+                className="min-h-full"
+              >
+                {outlet}
+              </motion.div>
+            ) : (
+              <motion.div
+                key={screenKey()}
+                custom={getDirection()}
+                variants={{
+                  enter: (dir: number) => ({
+                    x: dir > 0 ? "100%" : "-100%",
+                  }),
+                  center: { x: 0 },
+                  exit: (dir: number) => ({
+                    x: dir > 0 ? "-100%" : "100%",
+                  }),
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={TRANSITION_TAB}
+                className="min-h-full px-4 py-6 pb-28"
+              >
+                {outlet}
+              </motion.div>
+            )}
           </AnimatePresence>
         </main>
 
-        {/* 하단 탭바 */}
-        <UploadBanner />
-        <nav className="sticky bottom-0 z-10 border-t border-gray-200 bg-white/95 backdrop-blur">
-          <div className="flex items-stretch justify-around">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              if (tab.auth && !authed) {
+        {/* 하단: 업로드 배너 + 플로팅 탭바 */}
+        <div className="sticky bottom-0 z-10 pt-2">
+          <UploadBanner />
+          <div className="px-5 pb-4">
+            <nav className="relative flex items-stretch justify-around rounded-[22px] bg-white/92 shadow-float backdrop-blur-md">
+              {/* 활성 인디케이터 알약 (좌우/상하 6px 인셋) */}
+              {activeIdx !== -1 && (
+                <motion.div
+                  className="absolute inset-y-1.5 left-1.5 rounded-2xl bg-primary-tint"
+                  style={{ width: `calc((100% - 12px) / ${TABS.length})` }}
+                  animate={{ x: `${activeIdx * 100}%` }}
+                  transition={TRANSITION_PILL}
+                />
+              )}
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                if (tab.auth && !authed) {
+                  return (
+                    <button
+                      key={tab.to}
+                      onClick={() => navigate("/login")}
+                      className="relative z-10 flex flex-1 flex-col items-center gap-0.5 py-3 text-muted"
+                    >
+                      <Icon active={false} />
+                      <span className="text-[11px]">{tab.label}</span>
+                    </button>
+                  );
+                }
                 return (
-                  <button
+                  <NavLink
                     key={tab.to}
-                    onClick={() => navigate("/login")}
-                    className="flex flex-1 flex-col items-center gap-0.5 py-2 text-gray-400"
+                    to={tab.to}
+                    end={tab.to === "/feed"}
+                    onClick={() => onTabClick(tab.to)}
+                    className="relative z-10 flex flex-1 flex-col items-center gap-0.5 py-3"
                   >
-                    <Icon active={false} />
-                    <span className="text-[11px]">{tab.label}</span>
-                  </button>
+                    {({ isActive }) => {
+                      // 프로필은 /users/:id 로 리다이렉트되므로 currentIndex 로 보정
+                      const active =
+                        isActive ||
+                        (tab.to === "/profile" &&
+                          SWIPE_ORDER[currentIndex()] === "/profile");
+                      return (
+                        <>
+                          <Icon active={active} />
+                          <span
+                            className={
+                              active
+                                ? "text-[11px] font-medium text-primary"
+                                : "text-[11px] text-muted"
+                            }
+                          >
+                            {tab.label}
+                          </span>
+                        </>
+                      );
+                    }}
+                  </NavLink>
                 );
-              }
-              return (
-                <NavLink
-                  key={tab.to}
-                  to={tab.to}
-                  end={tab.to === "/feed"}
-                  onClick={() => onTabClick(tab.to)}
-                  className="flex flex-1 flex-col items-center gap-0.5 py-2"
-                >
-                  {({ isActive }) => {
-                    // 프로필은 /users/:id 로 리다이렉트되므로 currentIndex 로 보정
-                    const active =
-                      isActive ||
-                      (tab.to === "/profile" &&
-                        SWIPE_ORDER[currentIndex()] === "/profile");
-                    return (
-                      <>
-                        <Icon active={active} />
-                        <span
-                          className={
-                            active
-                              ? "text-[11px] font-medium text-[#D85A30]"
-                              : "text-[11px] text-gray-400"
-                          }
-                        >
-                          {tab.label}
-                        </span>
-                      </>
-                    );
-                  }}
-                </NavLink>
-              );
-            })}
+              })}
+            </nav>
           </div>
-        </nav>
+        </div>
       </div>
     </div>
   );
 }
 
-// ── 탭 아이콘 (active 면 주황 채움) ──
+// ── 탭 아이콘 (active 면 보라 채움) ──
 
 function iconColor(active: boolean) {
-  return active ? "#D85A30" : "#9CA3AF";
+  return active ? "#7C5CD8" : "#9AA0A8";
 }
 
 function HomeIcon({ active }: { active: boolean }) {
