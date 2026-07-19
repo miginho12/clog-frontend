@@ -41,10 +41,17 @@ server {
     }
 
     # ── MinIO 미디어 프록시 (경로 보존) ──
-    # 브라우저: clog.tail099985.ts.net/clog-media/<key>
+    # 브라우저: clog.tail099985.ts.net/clog-media/<key> (dev) 또는
+    #           clog.tail099985.ts.net/clog-media-prod/<key> (prod, 버킷 분리)
     #   → 내부 MinIO 로 경로 그대로 전달 (presigned 서명 호스트/경로 일치 필요)
     # GET: 버킷 public-read (조회 공개) / PUT: presigned 서명 필수
-    location /clog-media/ {
+    #
+    # ⚠️ prefix location(`/clog-media/`)이었을 때 prod 버킷명(clog-media-prod)이
+    #    매칭 안 되어(다음 글자가 `-`) SPA catch-all(`location /`)로 빠지고,
+    #    그 location엔 client_max_body_size 오버라이드가 없어 nginx 기본값(1m)이
+    #    적용되어 영상 업로드가 413으로 실패했다 (2026-07-19 발견).
+    #    정규식으로 clog-media* 버킷명을 전부 커버하도록 수정.
+    location ~ ^/clog-media {
         proxy_pass http://minio.dev.svc.cluster.local:9000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
