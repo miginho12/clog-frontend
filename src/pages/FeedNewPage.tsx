@@ -52,6 +52,8 @@ export default function FeedNewPage() {
   const [visibility, setVisibility] = useState<VisibilityType>("public");
 
   const [suggested, setSuggested] = useState<string[]>([]);
+  const [customTagInput, setCustomTagInput] = useState("");
+  const [tagError, setTagError] = useState<string | null>(null);
   const [gyms, setGyms] = useState<GymGradeSystem[]>([]);
   const [gymPickerOpen, setGymPickerOpen] = useState(false);
   const [gymQuery, setGymQuery] = useState("");
@@ -115,6 +117,28 @@ export default function FeedNewPage() {
     setCategories((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
+  }
+
+  // 추천 목록에 없는 태그를 직접 입력해서 추가 (QA #10 — 해시태그 자유 입력).
+  // 서버 검증(최대 30자, 최대 10개, 중복 제거)과 동일한 기준을 미리 체크.
+  function addCustomTag() {
+    const tag = customTagInput.trim().replace(/^#/, "");
+    setTagError(null);
+    if (!tag) return;
+    if (tag.length > 30) {
+      setTagError("태그는 30자 이하로 입력해 주세요");
+      return;
+    }
+    if (categories.includes(tag)) {
+      setTagError("이미 추가된 태그예요");
+      return;
+    }
+    if (categories.length >= 10) {
+      setTagError("태그는 최대 10개까지 추가할 수 있어요");
+      return;
+    }
+    setCategories((prev) => [...prev, tag]);
+    setCustomTagInput("");
   }
 
   // 영상 길이 검증 (1분 초과 거부)
@@ -504,7 +528,7 @@ export default function FeedNewPage() {
         {/* 등반 유형 해시태그 */}
         <Field label="등반 유형 해시태그">
           <div className="flex flex-wrap gap-2">
-            {suggested.map((tag) => {
+            {Array.from(new Set([...suggested, ...categories])).map((tag) => {
               const active = categories.includes(tag);
               return (
                 <button
@@ -523,6 +547,38 @@ export default function FeedNewPage() {
               );
             })}
           </div>
+
+          {/* 목록에 없는 태그 직접 추가 */}
+          <div className="mt-2 flex items-center gap-2 rounded-full bg-input px-3.5 py-2">
+            <span className="text-xs text-hint">#</span>
+            <input
+              value={customTagInput}
+              onChange={(e) => {
+                setCustomTagInput(e.target.value);
+                setTagError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  addCustomTag();
+                }
+              }}
+              maxLength={30}
+              placeholder="원하는 태그를 직접 입력해 보세요"
+              className="min-w-0 flex-1 bg-transparent text-xs text-title outline-none placeholder:text-hint"
+            />
+            <button
+              type="button"
+              onClick={addCustomTag}
+              disabled={!customTagInput.trim()}
+              className="shrink-0 text-xs font-bold text-primary disabled:opacity-40"
+            >
+              추가
+            </button>
+          </div>
+          {tagError && (
+            <p className="mt-1 text-[11px] text-danger">{tagError}</p>
+          )}
         </Field>
 
         {/* 결과 + 시도 횟수 */}
