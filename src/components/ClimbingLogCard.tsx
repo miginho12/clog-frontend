@@ -163,7 +163,7 @@ export default function ClimbingLogCard({
           </span>
         ) : (
           <span className="rounded-full bg-segment px-[11px] py-[5px] text-[12px] font-bold text-muted">
-            시도
+            도전
           </span>
         )}
         {log.visibility === "private" && (

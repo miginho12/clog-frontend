@@ -34,12 +34,15 @@ export default function FeedNewPage() {
   const isEdit = Boolean(editId);
   // 피드에서 넘긴 log (있으면 prefill 즉시, 없으면 단건 GET 폴백)
   const passedLog = (location.state as { log?: ClimbingLog } | null)?.log;
+  // 암장 피드(/gyms/:gymName)의 "첫 기록 남기기"에서 넘어온 경우 그 암장으로 prefill.
+  const presetGymName = (location.state as { gymName?: string } | null)
+    ?.gymName;
 
   // 시안 기본값은 컬러 그레이드(실내 암장이 더 흔한 케이스) — 신규 작성만.
   // 수정 모드는 기존 값으로 뒤에서 덮어씀.
   const [gradeSystem, setGradeSystem] = useState<GradeSystemType>("color");
   const [gradeRaw, setGradeRaw] = useState(""); // v_scale 선택값
-  const [gymName, setGymName] = useState(""); // v_scale 자유 입력 / color 드롭다운 선택
+  const [gymName, setGymName] = useState(presetGymName ?? ""); // v_scale 자유 입력 / color 드롭다운 선택
   const [colorValue, setColorValue] = useState(""); // color 색 선택값
   const [isSuccess, setIsSuccess] = useState(true);
   const [attempts, setAttempts] = useState(1);
@@ -536,7 +539,7 @@ export default function FeedNewPage() {
                       : "text-muted")
                   }
                 >
-                  {v ? "완등" : "시도"}
+                  {v ? "완등" : "도전"}
                 </button>
               ))}
             </div>
@@ -654,7 +657,7 @@ export default function FeedNewPage() {
         >
           {submitting
             ? "저장 중..."
-            : `${saveGradeLabel} ${isSuccess ? "완등" : "시도"} 기록 저장`}
+            : `${saveGradeLabel} ${isSuccess ? "완등" : "도전"} 기록 저장`}
         </button>
         <button
           onClick={() => navigate("/feed")}

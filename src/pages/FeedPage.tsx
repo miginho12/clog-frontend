@@ -223,6 +223,7 @@ export default function FeedPage() {
           </p>
           <Link
             to="/feed/new"
+            state={gymName ? { gymName } : undefined}
             className="bg-primary-gradient mt-[18px] inline-block rounded-pill px-6 py-3 text-[13.5px] font-extrabold text-white shadow-[0_8px_20px_rgba(124,92,216,.3)]"
           >
             + 첫 기록 남기기
