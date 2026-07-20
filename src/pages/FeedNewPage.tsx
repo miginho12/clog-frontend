@@ -167,9 +167,10 @@ export default function FeedNewPage() {
     // (원본 업로드가 사용자를 붙잡지 않게 하기 위함)
     setMediaFile(file);
     setMediaType(isVideo ? "video" : "image");
-    // 로컬 미리보기 (이미지만)
-    if (isImage) setMediaPreview(URL.createObjectURL(file));
-    else setMediaPreview(null);
+    // 로컬 미리보기 — 이미지/영상 둘 다 blob URL로 즉시 보여준다.
+    // (영상도 <video> 엘리먼트가 로컬 blob을 바로 재생할 수 있어 서버 업로드를
+    // 기다릴 필요가 없다. 예전엔 이미지만 해줘서 영상 선택 시 아무 티가 안 났음.)
+    setMediaPreview(URL.createObjectURL(file));
   }
 
   function removeMedia() {
@@ -177,6 +178,7 @@ export default function FeedNewPage() {
     setMediaUrl(null);
     setMediaType(null);
     setMediaPreview(null);
+    setMediaFile(null);
   }
 
   // 선택된 짐의 color_order (color 색 그리드용)
@@ -573,7 +575,7 @@ export default function FeedNewPage() {
             <div className="relative">
               {mediaType === "video" ? (
                 <video
-                  src={mediaUrl ?? undefined}
+                  src={mediaPreview ?? mediaUrl ?? undefined}
                   controls
                   className="w-full rounded-2xl bg-black"
                 />

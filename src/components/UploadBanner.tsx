@@ -3,7 +3,7 @@ import { useUpload } from "../lib/upload";
 // 전역 업로드 진행 배너 — 하단 탭바 위에 상주.
 // 업로드 중에도 사용자가 앱을 자유롭게 돌아다닐 수 있게 함.
 export default function UploadBanner() {
-  const { state, dismiss } = useUpload();
+  const { state, dismiss, retry } = useUpload();
   if (!state.active) return null;
 
   const isError = state.phase === "error";
@@ -52,7 +52,15 @@ export default function UploadBanner() {
           <p className="truncate text-sm font-medium text-title">{title}</p>
           <p className="truncate text-xs text-muted">{subtitle}</p>
         </div>
-        {/* 완료/에러 시 닫기 */}
+        {/* 에러 시 재시도, 완료/에러 시 닫기 */}
+        {isError && (
+          <button
+            onClick={retry}
+            className="shrink-0 rounded-lg bg-primary-tint px-2.5 py-1 text-xs font-bold text-primary hover:opacity-80"
+          >
+            재시도
+          </button>
+        )}
         {(isDone || isError) && (
           <button
             onClick={dismiss}

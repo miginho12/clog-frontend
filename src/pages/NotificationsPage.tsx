@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import {
   getNotifications,
   markAllNotificationsRead,
+  getClimbingLog,
+  listComments,
+  ApiError,
   type Notification,
 } from "../api/client";
 import { avatarGradient } from "../lib/avatarGradient";
@@ -51,6 +54,68 @@ export default function NotificationsPage() {
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [navigatingId, setNavigatingId] = useState<string | null>(null);
+
+  // 게시물/댓글 알림 클릭 시, 실제로 아직 존재하는지 먼저 확인한다.
+  // 삭제된 게시물/댓글을 가리키는 알림이면 안내 후 메인 피드로 보낸다.
+  async function handleClick(n: Notification) {
+    if (n.type === "follow_request") {
+      navigate("/follow-requests");
+      return;
+    }
+    if (n.type === "follow" || n.type === "follow_accept" || !n.climbing_log_id) {
+      navigate(`/users/${n.actor?.id}`);
+      return;
+    }
+    if (n.type === "media_failed") {
+      // 트랜스코딩 실패 게시물은 media_status=failed 라 피드/프로필 어디에도
+      // 안 보인다(list_feed 필터) — 존재는 하지만 이동해봐야 아무것도 없어
+      // 보이니, 바로 안내만 하고 피드로 보낸다.
+      navigate("/feed", {
+        state: { toast: "영상 처리에 실패해 게시되지 않았어요. 다시 올려주세요." },
+      });
+      return;
+    }
+
+    setNavigatingId(n.id);
+    try {
+      await getClimbingLog(n.climbing_log_id);
+    } catch (err) {
+      setNavigatingId(null);
+      if (err instanceof ApiError && err.status === 404) {
+        navigate("/feed", { state: { toast: "삭제된 게시물입니다" } });
+      } else {
+        navigate(`/feed?start=${n.climbing_log_id}`);
+      }
+      return;
+    }
+
+    if (
+      n.comment_id &&
+      (n.type === "post_comment" || n.type === "comment_reply")
+    ) {
+      try {
+        const res = await listComments(n.climbing_log_id);
+        const exists = res.items.some(
+          (t) =>
+            t.comment.id === n.comment_id ||
+            t.replies.some((r) => r.id === n.comment_id),
+        );
+        if (!exists) {
+          setNavigatingId(null);
+          navigate(`/feed?start=${n.climbing_log_id}`, {
+            state: { toast: "삭제된 댓글입니다" },
+          });
+          return;
+        }
+      } catch {
+        // 댓글 목록 조회 실패는 무시하고 게시물로만 이동
+      }
+    }
+
+    setNavigatingId(null);
+    navigate(`/feed?start=${n.climbing_log_id}`);
+  }
 
   useEffect(() => {
     let alive = true;
@@ -116,18 +181,9 @@ export default function NotificationsPage() {
         {items.map((n) => (
           <button
             key={n.id}
-            onClick={() =>
-              navigate(
-                n.type === "follow_request"
-                  ? "/follow-requests"
-                  : n.type === "follow" ||
-                      n.type === "follow_accept" ||
-                      !n.climbing_log_id
-                    ? `/users/${n.actor?.id}`
-                    : `/feed?start=${n.climbing_log_id}`,
-              )
-            }
-            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${
+            onClick={() => handleClick(n)}
+            disabled={navigatingId === n.id}
+            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition disabled:opacity-60 ${
               n.is_read ? "" : "bg-primary-tint/50"
             }`}
           >

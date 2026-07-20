@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useRef,
   useState,
   useCallback,
   type ReactNode,
@@ -30,6 +31,8 @@ interface UploadContextValue {
   // 호출 즉시 반환(비동기 진행) → 호출측은 바로 페이지 이동 가능.
   startUpload: (file: File, payload: ClimbingLogCreateInput) => void;
   dismiss: () => void;
+  // 실패 시 같은 파일/입력값으로 재시도 (폼을 다시 채울 필요 없이)
+  retry: () => void;
 }
 
 const IDLE: UploadState = {
@@ -44,50 +47,67 @@ const UploadContext = createContext<UploadContextValue | null>(null);
 
 export function UploadProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<UploadState>(IDLE);
+  // 실패 시 재시도용으로 마지막 업로드 입력을 기억해둔다 (폼 재입력 없이 재시도).
+  const lastAttempt = useRef<{
+    file: File;
+    payload: ClimbingLogCreateInput;
+  } | null>(null);
+
+  const run = useCallback((file: File, payload: ClimbingLogCreateInput) => {
+    lastAttempt.current = { file, payload };
+    const isVideo = file.type.startsWith("video/");
+    setState({
+      active: true,
+      phase: "uploading",
+      progress: 0,
+      fileName: file.name,
+      isVideo,
+    });
+
+    void (async () => {
+      try {
+        const presign = await presignMedia(file.type, file.name);
+        await uploadToPresigned(presign.upload_url, file, (pct) => {
+          setState((s) =>
+            s.phase === "uploading" ? { ...s, progress: pct } : s,
+          );
+        });
+        setState((s) => ({ ...s, phase: "creating", progress: 100 }));
+        await createClimbingLog({
+          ...payload,
+          media_url: presign.public_url,
+          media_type: presign.category,
+        });
+        setState((s) => ({ ...s, phase: "done", active: true }));
+        lastAttempt.current = null;
+        setTimeout(() => setState(IDLE), 4000);
+      } catch (e) {
+        setState((s) => ({
+          ...s,
+          phase: "error",
+          error: e instanceof Error ? e.message : "업로드에 실패했습니다",
+        }));
+      }
+    })();
+  }, []);
 
   const startUpload = useCallback(
-    (file: File, payload: ClimbingLogCreateInput) => {
-      const isVideo = file.type.startsWith("video/");
-      setState({
-        active: true,
-        phase: "uploading",
-        progress: 0,
-        fileName: file.name,
-        isVideo,
-      });
-
-      void (async () => {
-        try {
-          const presign = await presignMedia(file.type, file.name);
-          await uploadToPresigned(presign.upload_url, file, (pct) => {
-            setState((s) =>
-              s.phase === "uploading" ? { ...s, progress: pct } : s,
-            );
-          });
-          setState((s) => ({ ...s, phase: "creating", progress: 100 }));
-          await createClimbingLog({
-            ...payload,
-            media_url: presign.public_url,
-            media_type: presign.category,
-          });
-          setState((s) => ({ ...s, phase: "done", active: true }));
-          setTimeout(() => setState(IDLE), 4000);
-        } catch (e) {
-          setState((s) => ({
-            ...s,
-            phase: "error",
-            error: e instanceof Error ? e.message : "업로드에 실패했습니다",
-          }));
-        }
-      })();
-    },
-    [],
+    (file: File, payload: ClimbingLogCreateInput) => run(file, payload),
+    [run],
   );
 
-  const dismiss = useCallback(() => setState(IDLE), []);
+  const retry = useCallback(() => {
+    const attempt = lastAttempt.current;
+    if (attempt) run(attempt.file, attempt.payload);
+  }, [run]);
+
+  const dismiss = useCallback(() => {
+    lastAttempt.current = null;
+    setState(IDLE);
+  }, []);
 
   return (
-    <UploadContext.Provider value={{ state, startUpload, dismiss }}>
+    <UploadContext.Provider value={{ state, startUpload, dismiss, retry }}>
       {children}
     </UploadContext.Provider>
   );

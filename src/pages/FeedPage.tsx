@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
+  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
@@ -23,6 +24,16 @@ const PAGE_SIZE = 20;
 
 export default function FeedPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // 알림에서 삭제된 게시물/댓글로 진입한 경우 안내 토스트 (state로 전달됨)
+  const [toast, setToast] = useState<string | null>(
+    (location.state as { toast?: string } | null)?.toast ?? null,
+  );
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2500);
+    return () => window.clearTimeout(t);
+  }, [toast]);
   // /users/:userId/posts 로 진입하면 그 사용자 게시물만 필터.
   // /gyms/:gymName 로 진입하면 그 암장(자연암 포함) 게시물만 필터.
   // /tags/:tag 로 진입하면 그 해시태그 게시물만 필터.
@@ -155,6 +166,11 @@ export default function FeedPage() {
 
   return (
     <div className="space-y-4">
+      {toast && (
+        <div className="fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-full bg-title/90 px-4 py-2 text-sm font-medium text-white shadow-float">
+          {toast}
+        </div>
+      )}
       {/* 필터 피드(사용자 게시물/암장별/태그별)일 때만 뒤로가기 헤더. 전체 피드는 상단 헤더의 + 버튼 사용 */}
       {(userId || gymName || tag) && (
         <div className="flex items-center gap-2">
