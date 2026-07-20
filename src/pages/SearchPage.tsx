@@ -33,6 +33,7 @@ export default function SearchPage() {
 
   const [gyms, setGyms] = useState<GymGradeSystem[]>([]);
   const [popularTags, setPopularTags] = useState<CategoryCount[]>([]);
+  const [browseUsers, setBrowseUsers] = useState<UserSearchItem[]>([]);
   const [browseLoading, setBrowseLoading] = useState(true);
   const [users, setUsers] = useState<UserSearchItem[]>([]);
   const [userLoading, setUserLoading] = useState(false);
@@ -55,6 +56,7 @@ export default function SearchPage() {
     Promise.allSettled([
       listGymGradeSystems().then(setGyms),
       getPopularCategories(30).then(setPopularTags),
+      searchUsers("", 1, 30).then((res) => setBrowseUsers(res.items)),
       minDelay,
     ]).finally(() => setBrowseLoading(false));
   }, []);
@@ -232,7 +234,23 @@ export default function SearchPage() {
             </Section>
           )}
 
-          {filter === "user" && (
+          {(filter === "all" || filter === "user") && browseUsers.length > 0 && (
+            <Section title={filter === "all" ? "클라이머" : "전체 클라이머"}>
+              <div className="flex flex-col gap-1">
+                {(filter === "all" ? browseUsers.slice(0, 8) : browseUsers).map(
+                  (u) => (
+                    <UserRow
+                      key={u.id}
+                      user={u}
+                      onClick={() => navigate(`/users/${u.id}`)}
+                    />
+                  ),
+                )}
+              </div>
+            </Section>
+          )}
+
+          {filter === "user" && browseUsers.length === 0 && (
             <p className="py-8 text-center text-sm text-muted">
               닉네임을 입력해 클라이머를 찾아보세요.
             </p>
@@ -279,6 +297,20 @@ function BrowseSkeleton({ filter }: { filter: Filter }) {
                 key={i}
                 className={`h-[30px] w-16 rounded-full ${shimmer}`}
               />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(filter === "all" || filter === "user") && (
+        <div>
+          <div className={`mb-2.5 h-4 w-16 rounded-[6px] ${shimmer}`} />
+          <div className="flex flex-col gap-1">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-2 py-2">
+                <div className={`h-11 w-11 shrink-0 rounded-full ${shimmer}`} />
+                <div className={`h-3 w-28 rounded-[6px] ${shimmer}`} />
+              </div>
             ))}
           </div>
         </div>
