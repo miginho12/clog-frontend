@@ -495,6 +495,7 @@ export interface GymGradeSystem {
   brand_name: string | null;
   color_order: string[];
   is_official: boolean;
+  difficulty_offset: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -589,6 +590,7 @@ export async function createGymGradeSystem(input: {
   brand_name?: string | null;
   color_order: string[];
   is_official?: boolean;
+  difficulty_offset?: number;
 }): Promise<GymGradeSystem> {
   const res = await authFetch(
     `${API_BASE_URL}/gym-grade-systems`,
@@ -605,6 +607,7 @@ export async function updateGymGradeSystem(
   id: string,
   colorOrder: string[],
   brandName?: string | null,
+  difficultyOffset?: number,
 ): Promise<GymGradeSystem> {
   const res = await authFetch(
     `${API_BASE_URL}/gym-grade-systems/${id}`,
@@ -613,6 +616,7 @@ export async function updateGymGradeSystem(
       body: JSON.stringify({
         color_order: colorOrder,
         brand_name: brandName ?? null,
+        difficulty_offset: difficultyOffset ?? 0,
       }),
     },
     (t) => ({

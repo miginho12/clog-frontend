@@ -42,6 +42,7 @@ export default function AdminPage() {
   const [brandName, setBrandName] = useState("");
   const [order, setOrder] = useState<string[]>([]);
   const [isOfficial, setIsOfficial] = useState(true);
+  const [difficultyOffset, setDifficultyOffset] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -49,6 +50,7 @@ export default function AdminPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editOrder, setEditOrder] = useState<string[]>([]);
   const [editBrandName, setEditBrandName] = useState("");
+  const [editDifficultyOffset, setEditDifficultyOffset] = useState(0);
   const [editSaving, setEditSaving] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -83,6 +85,7 @@ export default function AdminPage() {
     setBrandName("");
     setOrder([]);
     setIsOfficial(true);
+    setDifficultyOffset(0);
     setFormError(null);
   }
 
@@ -103,6 +106,7 @@ export default function AdminPage() {
         brand_name: brandName.trim() || null,
         color_order: order,
         is_official: isOfficial,
+        difficulty_offset: difficultyOffset,
       });
       setGyms((prev) =>
         [...prev, created].sort((a, b) => a.gym_name.localeCompare(b.gym_name)),
@@ -135,6 +139,7 @@ export default function AdminPage() {
     setEditId(g.id);
     setEditOrder(g.color_order);
     setEditBrandName(g.brand_name ?? "");
+    setEditDifficultyOffset(g.difficulty_offset);
   }
 
   async function handleUpdate(id: string) {
@@ -148,6 +153,7 @@ export default function AdminPage() {
         id,
         editOrder,
         editBrandName.trim() || null,
+        editDifficultyOffset,
       );
       setGyms((prev) => prev.map((x) => (x.id === id ? updated : x)));
       setEditId(null);
@@ -274,6 +280,21 @@ export default function AdminPage() {
               공식 암장으로 등록
             </label>
 
+            <label className="mb-3 block text-xs font-bold text-muted">
+              난이도 보정치 ({difficultyOffset > 0 ? "+" : ""}
+              {difficultyOffset.toFixed(2)}) — 실제로 더 어려우면 양수, 더
+              쉬우면 음수
+              <input
+                type="range"
+                min={-0.5}
+                max={0.5}
+                step={0.05}
+                value={difficultyOffset}
+                onChange={(e) => setDifficultyOffset(Number(e.target.value))}
+                className="mt-1.5 w-full accent-primary"
+              />
+            </label>
+
             {formError && (
               <p className="mb-2 text-xs text-danger">{formError}</p>
             )}
@@ -359,6 +380,21 @@ export default function AdminPage() {
                   placeholder="예: 더클라임"
                   className="mb-2 w-full rounded-xl bg-input px-3 py-2 text-xs text-title outline-none"
                 />
+                <label className="mb-2 block text-[11px] font-bold text-muted">
+                  난이도 보정치 ({editDifficultyOffset > 0 ? "+" : ""}
+                  {editDifficultyOffset.toFixed(2)})
+                  <input
+                    type="range"
+                    min={-0.5}
+                    max={0.5}
+                    step={0.05}
+                    value={editDifficultyOffset}
+                    onChange={(e) =>
+                      setEditDifficultyOffset(Number(e.target.value))
+                    }
+                    className="mt-1 w-full accent-primary"
+                  />
+                </label>
                 <p className="mb-1.5 text-[11px] text-muted">
                   쉬움 → 어려움 순. 위쪽 색을 클릭하면 제거, 아래 팔레트에서 추가.
                 </p>
