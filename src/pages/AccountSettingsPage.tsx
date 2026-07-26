@@ -10,6 +10,7 @@ import {
 import { clearTokens } from "../lib/auth";
 import type { AuthUser } from "../lib/auth";
 import { avatarGradient } from "../lib/avatarGradient";
+import PasswordInput from "../components/PasswordInput";
 
 // 계정 설정 (/profile/edit) — 본인 전용.
 // 3개 카드: 프로필 정보 수정 / 비밀번호 변경(local 계정만) / 회원 탈퇴.
@@ -265,8 +266,7 @@ export default function AccountSettingsPage() {
 
             <div>
               <label className={labelCls}>현재 비밀번호</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={curPw}
                 onChange={(e) => setCurPw(e.target.value)}
                 className={inputCls}
@@ -275,8 +275,7 @@ export default function AccountSettingsPage() {
 
             <div>
               <label className={labelCls}>새 비밀번호</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPw}
                 onChange={(e) => setNewPw(e.target.value)}
                 placeholder="12자 이상, 영문·숫자·특수문자 포함"
@@ -286,8 +285,7 @@ export default function AccountSettingsPage() {
 
             <div>
               <label className={labelCls}>새 비밀번호 확인</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPw2}
                 onChange={(e) => setNewPw2(e.target.value)}
                 className={inputCls}

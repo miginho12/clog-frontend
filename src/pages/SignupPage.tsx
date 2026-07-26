@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signup, checkEmailAvailable, ApiError } from "../api/client";
+import PasswordInput from "../components/PasswordInput";
 
 // 백엔드 비밀번호 정책(app/core/password.py)과 동일한 기준으로 강도 계산.
 // 최소 12자 + 영문 + 숫자 + 특수문자 — 4개 중 충족한 개수 = 강도 바 개수.
@@ -157,8 +158,7 @@ export default function SignupPage() {
         </Field>
 
         <Field label="비밀번호">
-          <input
-            type="password"
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -179,8 +179,7 @@ export default function SignupPage() {
         </Field>
 
         <Field label="비밀번호 확인">
-          <input
-            type="password"
+          <PasswordInput
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
             required

@@ -6,6 +6,7 @@ import {
   confirmPasswordReset,
   ApiError,
 } from "../api/client";
+import PasswordInput from "../components/PasswordInput";
 
 const CODE_LEN = 6;
 const COUNTDOWN_SECONDS = 180; // 백엔드 password_reset_code_ttl_seconds(3분)와 동일
@@ -234,8 +235,7 @@ export default function ForgotPasswordPage() {
 
             <div>
               <label className="mb-1.5 block text-xs font-bold text-muted">새 비밀번호</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -257,8 +257,7 @@ export default function ForgotPasswordPage() {
 
             <div>
               <label className="mb-1.5 block text-xs font-bold text-muted">새 비밀번호 확인</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPasswordConfirm}
                 onChange={(e) => setNewPasswordConfirm(e.target.value)}
                 required

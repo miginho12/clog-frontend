@@ -39,6 +39,22 @@ export default function AppLayout() {
   const authed = isAuthenticated();
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // 브라우저 기본 스크롤 복원을 끄고 우리가 직접 제어한다 (QA #11).
+  // 안 끄면 브라우저/뒤로가기 상황에 따라 이전 화면 스크롤 위치를 그대로
+  // 복원해버려서, 새 화면(암장/유저/태그 필터 피드 등)이 맨 위가 아닌
+  // 중간 어딘가에서 시작된 것처럼 보이는 문제가 있었다.
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
+  // 경로(pathname)가 바뀔 때마다 스크롤을 맨 위로. ?start= 같은 같은
+  // 경로 내 쿼리 변경(피드 딥링크 스크롤)에는 영향 없도록 pathname만 본다.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   // 안읽은 알림 개수 (마운트 + 위치 변경 시 + 30초 폴링)
   useEffect(() => {
     if (!authed) {
@@ -180,7 +196,11 @@ export default function AppLayout() {
             <div />
 
             {/* 중앙: 로고 */}
-            <NavLink to="/feed" className="flex items-center justify-center gap-1.5">
+            <NavLink
+              to="/feed"
+              onClick={() => onTabClick("/feed")}
+              className="flex items-center justify-center gap-1.5"
+            >
               <span className="text-[22px] font-extrabold tracking-[-0.5px] text-title">
                 Clog
               </span>

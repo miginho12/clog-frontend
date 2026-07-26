@@ -114,9 +114,17 @@ export default function FeedNewPage() {
   }
 
   function toggleCategory(tag: string) {
-    setCategories((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    );
+    setCategories((prev) => {
+      if (prev.includes(tag)) return prev.filter((t) => t !== tag);
+      // 서버 최대 개수(10개)와 동일한 기준으로 선제 차단 — 다 채운 뒤 눌러도
+      // 무반응이면 안 되니 에러 문구도 같이 띄운다.
+      if (prev.length >= 10) {
+        setTagError("태그는 최대 10개까지 추가할 수 있어요");
+        return prev;
+      }
+      setTagError(null);
+      return [...prev, tag];
+    });
   }
 
   // 추천 목록에 없는 태그를 직접 입력해서 추가 (QA #10 — 해시태그 자유 입력).
@@ -530,16 +538,20 @@ export default function FeedNewPage() {
           <div className="flex flex-wrap gap-2">
             {Array.from(new Set([...suggested, ...categories])).map((tag) => {
               const active = categories.includes(tag);
+              const atCap = !active && categories.length >= 10;
               return (
                 <button
                   key={tag}
                   type="button"
+                  disabled={atCap}
                   onClick={() => toggleCategory(tag)}
                   className={
                     "rounded-full px-[13px] py-[7px] text-xs font-bold transition " +
                     (active
                       ? "border border-[#C9B8F0] bg-primary-tint text-primary"
-                      : "border border-transparent bg-input text-muted")
+                      : atCap
+                        ? "border border-transparent bg-input text-hint opacity-50"
+                        : "border border-transparent bg-input text-muted")
                   }
                 >
                   #{tag}
@@ -564,13 +576,18 @@ export default function FeedNewPage() {
                 }
               }}
               maxLength={30}
-              placeholder="원하는 태그를 직접 입력해 보세요"
-              className="min-w-0 flex-1 bg-transparent text-xs text-title outline-none placeholder:text-hint"
+              disabled={categories.length >= 10}
+              placeholder={
+                categories.length >= 10
+                  ? "태그를 최대 개수만큼 추가했어요"
+                  : "원하는 태그를 직접 입력해 보세요"
+              }
+              className="min-w-0 flex-1 bg-transparent text-xs text-title outline-none placeholder:text-hint disabled:cursor-not-allowed"
             />
             <button
               type="button"
               onClick={addCustomTag}
-              disabled={!customTagInput.trim()}
+              disabled={!customTagInput.trim() || categories.length >= 10}
               className="shrink-0 text-xs font-bold text-primary disabled:opacity-40"
             >
               추가
