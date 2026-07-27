@@ -30,10 +30,37 @@ jobs:
 
       - name: Lint (eslint)
         run: npm run lint
-        continue-on-error: true
 
       - name: Type check (tsc)
         run: npx tsc -b --noEmit
+
+      - name: Security audit (npm audit)
+        run: |
+          npm audit --json > audit.json || true
+          python3 -c "
+          import json
+          with open('audit.json') as f:
+              data = json.load(f)
+          # GHSA-qwww-vcr4-c8h2: react-router RSC Mode CSRF 우회 — 이 앱은
+          # BrowserRouter 기반 순수 SPA라 RSC 모드 자체를 안 써 실질 위험 없음.
+          # npm에 8.x 미출시라 유일한 '수정'이 7.11.0 다운그레이드(breaking)뿐이라
+          # 보류(2026-07-27 확인).
+          ALLOWED = {'GHSA-qwww-vcr4-c8h2'}
+          vulns = data.get('vulnerabilities', {})
+          unexpected = []
+          for name, v in vulns.items():
+              for via in v.get('via', []):
+                  if isinstance(via, dict):
+                      ghsa = via.get('url', '').rsplit('/', 1)[-1]
+                      if ghsa not in ALLOWED:
+                          unexpected.append(f'{name}: {ghsa}')
+          if unexpected:
+              print('New/unexpected vulnerabilities found:')
+              for u in unexpected:
+                  print(f'  - {u}')
+              raise SystemExit(1)
+          print('No unexpected vulnerabilities (only documented exceptions).')
+          "
 
   build:
     needs: test
