@@ -25,7 +25,9 @@ export default function AuthCallbackPage() {
       saveTokens(accessToken, refreshToken);
       navigate("/feed", { replace: true });
     } else {
-      setError("로그인 정보를 받지 못했습니다. 다시 시도해주세요.");
+      queueMicrotask(() =>
+        setError("로그인 정보를 받지 못했습니다. 다시 시도해주세요."),
+      );
     }
   }, [navigate]);
 

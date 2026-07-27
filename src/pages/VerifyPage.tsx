@@ -17,7 +17,7 @@ export default function VerifyPage() {
     ran.current = true;
 
     if (!token) {
-      setStatus("failed");
+      queueMicrotask(() => setStatus("failed"));
       return;
     }
     verifyEmail(token)

@@ -107,16 +107,20 @@ export default function FeedPage() {
   }, []);
 
   useEffect(() => {
-    loadPage(1);
+    void (async () => {
+      await loadPage(1);
+    })();
   }, [loadPage]);
 
   // 암장 피드일 때, 같은 브랜드(체인)의 다른 지점을 찾아 보여준다.
   // gym_grade_systems 는 자연암(V스케일 자유 입력)엔 없으므로 실내 암장일 때만 뜬다.
   useEffect(() => {
     if (!gymName) {
-      setSiblingBranches([]);
-      setMyGymSystem(null);
-      setShowRanking(false);
+      queueMicrotask(() => {
+        setSiblingBranches([]);
+        setMyGymSystem(null);
+        setShowRanking(false);
+      });
       return;
     }
     let cancelled = false;

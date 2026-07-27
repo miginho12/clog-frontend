@@ -65,13 +65,15 @@ export default function SearchPage() {
   useEffect(() => {
     const query = q.trim();
     if (query === "" || query.startsWith("#")) {
-      setUsers([]);
-      setUserSearched(false);
-      setUserError(null);
-      setUserLoading(false);
+      queueMicrotask(() => {
+        setUsers([]);
+        setUserSearched(false);
+        setUserError(null);
+        setUserLoading(false);
+      });
       return;
     }
-    setUserLoading(true);
+    queueMicrotask(() => setUserLoading(true));
     const myReq = ++reqId.current;
     const timer = window.setTimeout(async () => {
       try {

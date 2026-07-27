@@ -195,19 +195,19 @@ export default function CommentSection({
   const [submitting, setSubmitting] = useState(false);
 
   async function load() {
-    try {
-      const res = await listComments(logId);
-      setThreads(res.items);
-      setTotal(res.total);
-    } catch {
-      // 조회 실패는 조용히
-    } finally {
-      setLoading(false);
-    }
+    return listComments(logId)
+      .then((res) => {
+        setThreads(res.items);
+        setTotal(res.total);
+      })
+      .catch(() => {
+        // 조회 실패는 조용히
+      })
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => {
-    load();
+    void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logId]);
 

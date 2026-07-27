@@ -86,19 +86,21 @@ export default function GradePage() {
 
   // 그레이드 조회 (기준짐은 항상 자동 = 최다 기록 짐)
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    getMyGrade()
-      .then(setGrade)
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 401) {
-          clearTokens();
-          navigate("/login");
-        } else {
-          setError("그레이드를 불러오지 못했습니다");
-        }
-      })
-      .finally(() => setLoading(false));
+    void (async () => {
+      setLoading(true);
+      setError(null);
+      await getMyGrade()
+        .then(setGrade)
+        .catch((err) => {
+          if (err instanceof ApiError && err.status === 401) {
+            clearTokens();
+            navigate("/login");
+          } else {
+            setError("그레이드를 불러오지 못했습니다");
+          }
+        })
+        .finally(() => setLoading(false));
+    })();
   }, [navigate]);
 
   return (

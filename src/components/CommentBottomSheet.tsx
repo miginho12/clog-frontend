@@ -19,6 +19,7 @@ export default function CommentBottomSheet({
 
   // 드래그(아래로 스와이프) 상태
   const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef<number | null>(null);
   const dragging = useRef(false);
 
@@ -27,8 +28,12 @@ export default function CommentBottomSheet({
       const id = requestAnimationFrame(() => setVisible(true));
       return () => cancelAnimationFrame(id);
     } else {
-      setVisible(false);
-      setDragY(0);
+      // 이 렌더는 아래 !open 체크로 이미 null 을 반환하므로(리셋은 다음
+      // 오픈 때를 위한 준비일 뿐), 마이크로태스크로 미뤄도 화면엔 영향 없다.
+      queueMicrotask(() => {
+        setVisible(false);
+        setDragY(0);
+      });
     }
   }, [open]);
 
@@ -56,6 +61,7 @@ export default function CommentBottomSheet({
   function onDragStart(clientY: number) {
     dragStartY.current = clientY;
     dragging.current = true;
+    setIsDragging(true);
   }
   function onDragMove(clientY: number) {
     if (!dragging.current || dragStartY.current === null) return;
@@ -66,6 +72,7 @@ export default function CommentBottomSheet({
   function onDragEnd() {
     if (!dragging.current) return;
     dragging.current = false;
+    setIsDragging(false);
     // 120px 이상 내리면 닫기, 아니면 원위치
     if (dragY > 120) {
       onClose(logId);
@@ -90,9 +97,7 @@ export default function CommentBottomSheet({
           transform: visible
             ? `translateY(${dragY}px)`
             : "translateY(100%)",
-          transition: dragging.current
-            ? "none"
-            : "transform 0.3s ease-out",
+          transition: isDragging ? "none" : "transform 0.3s ease-out",
         }}
       >
         {/* 핸들바 + 헤더 (여기서 드래그 시작) */}

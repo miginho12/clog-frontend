@@ -30,6 +30,9 @@ export function NavDirectionProvider({
   );
 }
 
+// Provider 와 같은 파일에 두는 흔한 Context 패턴이라 Fast Refresh 최적화만
+// 못 받을 뿐 실제 문제는 아님 (풀 리로드로 폴백되는 정도).
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNavDirection(): NavDirectionContextValue {
   const ctx = useContext(NavDirectionContext);
   if (!ctx) {

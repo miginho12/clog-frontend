@@ -56,9 +56,10 @@ export default function AppLayout() {
   }, [location.pathname]);
 
   // 안읽은 알림 개수 (마운트 + 위치 변경 시 + 30초 폴링)
+  // 알림 뱃지 자체가 authed && ... 로만 렌더되므로, 비로그인 시엔
+  // unreadCount 를 굳이 리셋하지 않아도 화면에 남지 않는다.
   useEffect(() => {
     if (!authed) {
-      setUnreadCount(0);
       return;
     }
     let alive = true;

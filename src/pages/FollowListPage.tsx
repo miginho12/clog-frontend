@@ -34,8 +34,12 @@ export default function FollowListPage({ mode }: Props) {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setLoading(true);
+        setError(null);
+      }
+    });
 
     async function load(userId: string) {
       try {

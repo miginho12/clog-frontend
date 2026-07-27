@@ -58,7 +58,9 @@ export default function GymRankingPanel({ gymName }: { gymName: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true);
+    });
     const params =
       period === "month"
         ? {
