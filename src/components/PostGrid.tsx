@@ -13,12 +13,17 @@ import { colorInfo } from "../lib/colorMap";
 // 금지 원칙). 뷰포트 근처에 올 때만 src 를 붙이는 지연 로딩 적용
 // (2026-07-30 Android 실기기에서 그리드 썸네일 전체가 깨져 보이는 문제로 발견).
 function VideoThumbnail({ src }: { src: string }) {
-  const ref = useRef<HTMLVideoElement>(null);
+  // 관찰 대상은 항상 존재하는 래퍼 — video 엘리먼트 자체를 관찰하면 src 없는
+  // <video> 태그가 shouldLoad 전까지 DOM에 남아있어야 하는데, Android
+  // WebView(Capacitor 앱)는 src 없는 <video>를 "미디어 로드 실패" 아이콘으로
+  // 렌더링한다(AutoPlayVideo 에서 먼저 고친 것과 동일 원인 — 2026-07-30
+  // 프로필 그리드에서 재발 확인, video 는 shouldLoad 전엔 DOM에 아예 안 만든다).
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(false);
 
   useEffect(() => {
-    const video = ref.current;
-    if (!video || shouldLoad) return;
+    const wrapper = wrapperRef.current;
+    if (!wrapper || shouldLoad) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -28,7 +33,7 @@ function VideoThumbnail({ src }: { src: string }) {
       },
       { rootMargin: "200px 0px" },
     );
-    observer.observe(video);
+    observer.observe(wrapper);
     return () => observer.disconnect();
   }, [shouldLoad]);
 
@@ -44,15 +49,18 @@ function VideoThumbnail({ src }: { src: string }) {
   }
 
   return (
-    <video
-      ref={ref}
-      src={shouldLoad ? src : undefined}
-      className="h-full w-full object-cover"
-      muted
-      playsInline
-      preload="metadata"
-      onLoadedData={forceFrame}
-    />
+    <div ref={wrapperRef} className="h-full w-full">
+      {shouldLoad && (
+        <video
+          src={src}
+          className="h-full w-full object-cover"
+          muted
+          playsInline
+          preload="metadata"
+          onLoadedData={forceFrame}
+        />
+      )}
+    </div>
   );
 }
 
