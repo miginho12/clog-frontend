@@ -1,0 +1,79 @@
+name: Android Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "android/**"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.ts"
+      - ".env.mobile"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # AGP 8.13 / Gradle 8.14 는 JDK 17+ 필요 — compileSdk 36 대응 위해 21 사용
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 모바일 전용 빌드 — 절대 API URL(https://climb-log.com/api) 임베드
+      - name: Build web assets (mobile mode)
+        run: npm run build:mobile
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clog-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+  notify-failure:
+    needs: build-android
+    if: always() && needs.build-android.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Discord on CI failure
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -sf -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": \"❌ **clog-frontend** Android 빌드 실패 (${{ github.ref_name }})\\n커밋: \`${{ github.sha }}\`\\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"
