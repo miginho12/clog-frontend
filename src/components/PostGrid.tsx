@@ -2,6 +2,17 @@ import { useNavigate } from "react-router-dom";
 import type { ClimbingLog } from "../api/client";
 import { colorInfo } from "../lib/colorMap";
 
+// Android WebView(Capacitor 앱)는 preload="metadata" 만으로는 재생/seek 없이
+// 첫 프레임을 안 그리는 경우가 많아(2026-07-30 실기기 테스트에서 발견 —
+// 데스크톱/일반 브라우저는 정상, 그리드 썸네일만 깨져 보임). loadeddata 시
+// 아주 살짝 seek 해서 프레임 렌더링을 강제로 트리거한다.
+function forceVideoFrame(e: React.SyntheticEvent<HTMLVideoElement>) {
+  const video = e.currentTarget;
+  if (video.currentTime === 0) {
+    video.currentTime = 0.1;
+  }
+}
+
 // 프로필용 3열 썸네일 그리드 (인스타식).
 // 미디어 있으면 이미지/영상 썸네일, 없으면 그레이드 색 타일.
 // 썸네일 클릭 → 그 사용자 게시물 피드(/users/:userId/posts?start=:id).
@@ -57,6 +68,7 @@ export default function PostGrid({
                   muted
                   playsInline
                   preload="metadata"
+                  onLoadedData={forceVideoFrame}
                 />
                 <span className="absolute right-1.5 top-1.5 text-white drop-shadow">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
