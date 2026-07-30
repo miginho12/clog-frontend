@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ClimbingLog } from "../api/client";
 import { colorInfo } from "../lib/colorMap";
@@ -7,60 +6,24 @@ import { colorInfo } from "../lib/colorMap";
 // 미디어 있으면 이미지/영상 썸네일, 없으면 그레이드 색 타일.
 // 썸네일 클릭 → 그 사용자 게시물 피드(/users/:userId/posts?start=:id).
 
-// 게시물이 많으면 영상 썸네일 전부가 마운트와 동시에 preload="metadata"
-// 요청을 쏘는데, 한꺼번에 여러 개가 걸리면 nginx 프록시가 버티지 못한다
-// (AutoPlayVideo 개발 때도 같은 문제로 503 — 화면 밖 영상까지 동시 요청
-// 금지 원칙). 뷰포트 근처에 올 때만 src 를 붙이는 지연 로딩 적용
-// (2026-07-30 Android 실기기에서 그리드 썸네일 전체가 깨져 보이는 문제로 발견).
-function VideoThumbnail({ src }: { src: string }) {
-  // 관찰 대상은 항상 존재하는 래퍼 — video 엘리먼트 자체를 관찰하면 src 없는
-  // <video> 태그가 shouldLoad 전까지 DOM에 남아있어야 하는데, Android
-  // WebView(Capacitor 앱)는 src 없는 <video>를 "미디어 로드 실패" 아이콘으로
-  // 렌더링한다(AutoPlayVideo 에서 먼저 고친 것과 동일 원인 — 2026-07-30
-  // 프로필 그리드에서 재발 확인, video 는 shouldLoad 전엔 DOM에 아예 안 만든다).
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
-
-  useEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper || shouldLoad) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setShouldLoad(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "200px 0px" },
-    );
-    observer.observe(wrapper);
-    return () => observer.disconnect();
-  }, [shouldLoad]);
-
-  // Android WebView(Capacitor 앱)는 preload="metadata" 만으로는 재생/seek 없이
-  // 첫 프레임을 안 그리는 경우가 많아(2026-07-30 실기기 테스트에서 발견 —
-  // 데스크톱/일반 브라우저는 정상). loadeddata 시 아주 살짝 seek 해서 프레임
-  // 렌더링을 강제로 트리거한다.
-  function forceFrame(e: React.SyntheticEvent<HTMLVideoElement>) {
-    const video = e.currentTarget;
-    if (video.currentTime === 0) {
-      video.currentTime = 0.1;
-    }
+// 영상 그리드 썸네일은 <video> 태그로 프레임을 그려서 만들지 않는다 —
+// Android WebView(Capacitor 앱)는 src 없거나 재생되지 않은 <video>를 "미디어
+// 로드 실패" 아이콘으로 렌더링해서 데스크톱/일반 브라우저와 다르게 보인다
+// (2026-07-30 실기기에서 두 차례 패치로도 재발). 대신 백엔드가 트랜스코딩 시
+// ffmpeg로 미리 뽑아둔 정지 이미지(thumbnail_url)를 그냥 <img>로 보여준다 —
+// 이미지 썸네일과 동일한 방식이라 WebView 차이가 아예 발생할 수 없다.
+// thumbnail_url이 없으면(백필 전 구버전 영상) 회색 타일로만 대체.
+function VideoThumbnail({ thumbnailUrl }: { thumbnailUrl: string | null | undefined }) {
+  if (!thumbnailUrl) {
+    return <div className="h-full w-full bg-segment" />;
   }
-
   return (
-    <div ref={wrapperRef} className="h-full w-full">
-      {shouldLoad && (
-        <video
-          src={src}
-          className="h-full w-full object-cover"
-          muted
-          playsInline
-          preload="metadata"
-          onLoadedData={forceFrame}
-        />
-      )}
-    </div>
+    <img
+      src={thumbnailUrl}
+      alt=""
+      loading="lazy"
+      className="h-full w-full object-cover"
+    />
   );
 }
 
@@ -109,7 +72,7 @@ export default function PostGrid({
           {log.media_url ? (
             log.media_type === "video" ? (
               <>
-                <VideoThumbnail src={log.media_url} />
+                <VideoThumbnail thumbnailUrl={log.thumbnail_url} />
                 <span className="absolute right-1.5 top-1.5 text-white drop-shadow">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z" />

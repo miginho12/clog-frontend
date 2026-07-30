@@ -673,6 +673,7 @@ export interface ClimbingLog {
   climbed_at: string; // date (YYYY-MM-DD)
   media_type: string | null;
   media_url: string | null;
+  thumbnail_url?: string | null; // video 전용 정지 썸네일 (없으면 image거나 백필 전)
   visibility: string;
   created_at: string;
   updated_at: string;
