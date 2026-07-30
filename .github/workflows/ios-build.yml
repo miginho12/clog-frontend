@@ -1,0 +1,66 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "ios/**"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.ts"
+      - ".env.mobile"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 모바일 전용 빌드 — 절대 API URL(https://climb-log.com/api) 임베드
+      - name: Build web assets (mobile mode)
+        run: npm run build:mobile
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      # Apple Developer 계정/서명 인증서가 아직 없어서 배포용 빌드는 불가.
+      # -target(스킴 아님)으로 시뮬레이터 SDK 대상 컴파일만 검증 — 코드
+      # 서명 없이도 Xcode 프로젝트 설정 오류/컴파일 에러를 커밋마다 잡아낸다.
+      # 실기기 설치/TestFlight는 Apple Developer Program 가입 후 별도 단계.
+      - name: Build iOS (Simulator SDK, unsigned — build verification only)
+        working-directory: ios/App
+        run: |
+          xcodebuild build \
+            -project App.xcodeproj \
+            -target App \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO
+
+  notify-failure:
+    needs: build-ios
+    if: always() && needs.build-ios.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Discord on CI failure
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -sf -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": \"❌ **clog-frontend** iOS 빌드 실패 (${{ github.ref_name }})\\n커밋: \`${{ github.sha }}\`\\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"
