@@ -49,6 +49,7 @@ export default function AdminPage() {
   // 색 순서 편집 (카드 인라인)
   const [editId, setEditId] = useState<string | null>(null);
   const [editOrder, setEditOrder] = useState<string[]>([]);
+  const [editGymName, setEditGymName] = useState("");
   const [editBrandName, setEditBrandName] = useState("");
   const [editDifficultyOffset, setEditDifficultyOffset] = useState(0);
   const [editSaving, setEditSaving] = useState(false);
@@ -138,6 +139,7 @@ export default function AdminPage() {
   function startEdit(g: GymGradeSystem) {
     setEditId(g.id);
     setEditOrder(g.color_order);
+    setEditGymName(g.gym_name);
     setEditBrandName(g.brand_name ?? "");
     setEditDifficultyOffset(g.difficulty_offset);
   }
@@ -147,6 +149,22 @@ export default function AdminPage() {
       alert("색은 최소 2단계 이상이어야 합니다");
       return;
     }
+    const trimmedName = editGymName.trim();
+    if (!trimmedName) {
+      alert("암장 이름을 입력하세요");
+      return;
+    }
+    const current = gyms.find((x) => x.id === id);
+    const renaming = !!current && trimmedName !== current.gym_name;
+    if (
+      renaming &&
+      !window.confirm(
+        `"${current!.gym_name}" 을(를) "${trimmedName}" 으로 개명합니다.\n` +
+          "이 이름으로 이미 기록된 과거 완등 기록도 함께 새 이름으로 옮겨집니다.\n\n계속할까요?",
+      )
+    ) {
+      return;
+    }
     setEditSaving(true);
     try {
       const updated = await updateGymGradeSystem(
@@ -154,6 +172,7 @@ export default function AdminPage() {
         editOrder,
         editBrandName.trim() || null,
         editDifficultyOffset,
+        trimmedName,
       );
       setGyms((prev) => prev.map((x) => (x.id === id ? updated : x)));
       setEditId(null);
@@ -371,6 +390,15 @@ export default function AdminPage() {
 
             {editId === g.id ? (
               <div className="mt-3 border-t border-line pt-3">
+                <label className="mb-1.5 block text-[11px] font-bold text-muted">
+                  암장 이름 (개명 시 과거 기록도 함께 옮겨짐)
+                </label>
+                <input
+                  value={editGymName}
+                  onChange={(e) => setEditGymName(e.target.value)}
+                  placeholder="예: 더클라임 강남"
+                  className="mb-2 w-full rounded-xl bg-input px-3 py-2 text-xs text-title outline-none"
+                />
                 <label className="mb-1.5 block text-[11px] font-bold text-muted">
                   브랜드 (선택)
                 </label>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   getMyGrade,
   getMyGradeTimeline,
-  listGymGradeSystems,
+  listGymGradeSystemRepresentatives,
   ApiError,
   type MeGradeResponse,
   type GymGradeSystem,
@@ -31,9 +31,9 @@ export default function GradePage() {
   const [conversions, setConversions] = useState<GymConversion[]>([]);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
 
-  // 짐 목록 (base_gym 드롭다운 옵션) — 1회 로드
+  // 암장 간 난이도 환산 탭 대상 짐 목록 (공식 + 브랜드 대표/단독만) — 1회 로드
   useEffect(() => {
-    listGymGradeSystems()
+    listGymGradeSystemRepresentatives()
       .then(setGyms)
       .catch(() => {
         // 짐 목록 실패는 치명적이지 않음 (드롭다운만 비게 됨)

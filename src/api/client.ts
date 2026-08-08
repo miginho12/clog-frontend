@@ -536,6 +536,15 @@ export async function listGymGradeSystems(
   return handleResponse<GymGradeSystem[]>(res);
 }
 
+// 암장 간 난이도 환산 탭 전용: 공식 + 브랜드 대표/단독 암장만
+// (같은 브랜드 지점은 대표와 중복 노출되지 않도록 서버에서 제외됨).
+export async function listGymGradeSystemRepresentatives(): Promise<
+  GymGradeSystem[]
+> {
+  const res = await fetch(`${API_BASE_URL}/gym-grade-systems/representatives`);
+  return handleResponse<GymGradeSystem[]>(res);
+}
+
 // ── 암장 랭킹 (공개 계정의 공개 컬러 등급 기록만) ──
 export interface GymRankingUser {
   id: string;
@@ -608,6 +617,9 @@ export async function updateGymGradeSystem(
   colorOrder: string[],
   brandName?: string | null,
   difficultyOffset?: number,
+  // 암장 이름 개명 — admin 전용(비admin이 보내면 서버가 무시). 생략하면
+  // 기존 이름 유지. 개명 시 climbing_logs.gym_name 도 서버에서 일괄 갱신됨.
+  gymName?: string,
 ): Promise<GymGradeSystem> {
   const res = await authFetch(
     `${API_BASE_URL}/gym-grade-systems/${id}`,
@@ -617,6 +629,7 @@ export async function updateGymGradeSystem(
         color_order: colorOrder,
         brand_name: brandName ?? null,
         difficulty_offset: difficultyOffset ?? 0,
+        gym_name: gymName ?? null,
       }),
     },
     (t) => ({
