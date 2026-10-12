@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 import { useUpload } from "../lib/upload";
+import FollowTargetPicker from "../components/FollowTargetPicker";
 import {
   createClimbingLog,
   updateClimbingLog,
@@ -13,6 +14,8 @@ import {
   type GradeSystemType,
   type VisibilityType,
   type GymGradeSystem,
+  type VideoModeType,
+  type FollowTarget,
 } from "../api/client";
 
 const MAX_VIDEO_SECONDS = 60; // 영상 1분 제한
@@ -65,6 +68,9 @@ export default function FeedNewPage() {
   const [mediaType, setMediaType] = useState<string | null>(null); // "image" | "video"
   const [mediaPreview, setMediaPreview] = useState<string | null>(null); // 로컬 미리보기 objectURL
   const [mediaFile, setMediaFile] = useState<File | null>(null); // 선택 파일 (제출 시 백그라운드 업로드)
+  // 들찍(팔로우캠): 신규 영상 업로드에서만 선택. 대상 탭은 선택 사항(null=서버 자동 선정)
+  const [videoMode, setVideoMode] = useState<VideoModeType>("normal");
+  const [followTarget, setFollowTarget] = useState<FollowTarget | null>(null);
 
   useEffect(() => {
     getSuggestedCategories().then(setSuggested).catch(() => {});
@@ -199,6 +205,9 @@ export default function FeedNewPage() {
     // (원본 업로드가 사용자를 붙잡지 않게 하기 위함)
     setMediaFile(file);
     setMediaType(isVideo ? "video" : "image");
+    // 새 파일이면 이전 파일 기준의 들찍 선택/탭 위치는 무효
+    setVideoMode("normal");
+    setFollowTarget(null);
     // 로컬 미리보기 — 이미지/영상 둘 다 blob URL로 즉시 보여준다.
     // (영상도 <video> 엘리먼트가 로컬 blob을 바로 재생할 수 있어 서버 업로드를
     // 기다릴 필요가 없다. 예전엔 이미지만 해줘서 영상 선택 시 아무 티가 안 났음.)
@@ -211,6 +220,8 @@ export default function FeedNewPage() {
     setMediaType(null);
     setMediaPreview(null);
     setMediaFile(null);
+    setVideoMode("normal");
+    setFollowTarget(null);
   }
 
   // 선택된 짐의 color_order (color 색 그리드용)
@@ -273,6 +284,9 @@ export default function FeedNewPage() {
         ...basePayload,
         media_url: null, // Provider 가 업로드 후 채움
         media_type: mediaType,
+        ...(mediaType === "video" && videoMode === "follow"
+          ? { video_mode: "follow" as const, follow_target: followTarget }
+          : {}),
       });
       navigate("/feed");
       return;
@@ -644,9 +658,45 @@ export default function FeedNewPage() {
 
         {/* 미디어 (이미지/영상) */}
         <Field label="사진 / 영상 (영상은 최대 60초)">
+          {/* 들찍 모드 선택 — 신규 작성 + 영상 파일 선택 시에만 (수정 모드는 이미 처리된 영상) */}
+          {!isEdit && mediaFile && mediaType === "video" && (
+            <div className="mb-2">
+              <div className="flex rounded-input bg-segment p-1">
+                {(["normal", "follow"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setVideoMode(v)}
+                    className={
+                      "flex-1 rounded-[11px] py-[9px] text-[13px] font-bold transition " +
+                      (videoMode === v
+                        ? "bg-white text-title shadow-[0_1px_4px_rgba(90,70,140,.15)]"
+                        : "text-muted")
+                    }
+                  >
+                    {v === "normal" ? "일반 영상" : "들찍 영상"}
+                  </button>
+                ))}
+              </div>
+              {videoMode === "follow" && (
+                <p className="mt-1.5 text-[11px] text-muted">
+                  삼각대 영상을 등반자를 따라가며 찍은 것처럼 바꿔줘요. 처리에 1~2분 걸려요.
+                </p>
+              )}
+            </div>
+          )}
           {mediaUrl || mediaPreview ? (
             <div className="relative">
-              {mediaType === "video" ? (
+              {mediaType === "video" &&
+              !isEdit &&
+              videoMode === "follow" &&
+              mediaPreview ? (
+                <FollowTargetPicker
+                  src={mediaPreview}
+                  target={followTarget}
+                  onChange={setFollowTarget}
+                />
+              ) : mediaType === "video" ? (
                 <video
                   src={mediaPreview ?? mediaUrl ?? undefined}
                   controls

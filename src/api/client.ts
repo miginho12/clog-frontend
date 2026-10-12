@@ -657,6 +657,15 @@ export async function deleteGymGradeSystem(id: string): Promise<void> {
 
 export type GradeSystemType = "v_scale" | "color";
 export type VisibilityType = "public" | "private";
+// 들찍(팔로우캠): 서버 워커가 클라이머를 따라가는 가상 카메라로 크롭 렌더링
+export type VideoModeType = "normal" | "follow";
+
+// 들찍 대상 — 미리보기에서 탭한 위치. x/y 는 영상 화면 기준 0~1 정규화, t 는 초.
+export interface FollowTarget {
+  t: number;
+  x: number;
+  y: number;
+}
 
 export interface ClimbingLogAuthor {
   id: string;
@@ -715,6 +724,8 @@ export interface ClimbingLogCreateInput {
   visibility?: VisibilityType;
   media_type?: string | null; // "image" | "video"
   media_url?: string | null;
+  video_mode?: VideoModeType; // 생략 시 normal (작성 시에만 의미, 영상 전용)
+  follow_target?: FollowTarget | null; // null 이면 서버가 자동 선정
 }
 
 export interface FeedParams {
