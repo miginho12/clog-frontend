@@ -235,6 +235,10 @@ export default function FeedNewPage() {
   );
 
   // 저장 버튼 동적 색상/라벨 — 컬러 모드는 선택한 색 hex, V-Scale은 브랜드 보라
+  // 들찍 대상 탭 화면 표시 여부 — 이때는 영상 전체가 탭 영역이라 삭제 버튼을 영상 밖(라벨 줄)으로 뺀다
+  const pickingFollowTarget =
+    mediaType === "video" && !isEdit && videoMode === "follow" && !!mediaPreview;
+
   const saveColor =
     gradeSystem === "color" && colorValue ? colorInfo(colorValue).bg : "#7C5CD8";
   const saveGradeLabel =
@@ -657,7 +661,20 @@ export default function FeedNewPage() {
         </div>
 
         {/* 미디어 (이미지/영상) */}
-        <Field label="사진 / 영상 (영상은 최대 60초)">
+        <Field
+          label="사진 / 영상 (영상은 최대 60초)"
+          trailing={
+            pickingFollowTarget ? (
+              <button
+                type="button"
+                onClick={removeMedia}
+                className="text-xs font-bold text-muted hover:text-title"
+              >
+                영상 삭제
+              </button>
+            ) : undefined
+          }
+        >
           {/* 들찍 모드 선택 — 신규 작성 + 영상 파일 선택 시에만 (수정 모드는 이미 처리된 영상) */}
           {!isEdit && mediaFile && mediaType === "video" && (
             <div className="mb-2">
@@ -687,10 +704,7 @@ export default function FeedNewPage() {
           )}
           {mediaUrl || mediaPreview ? (
             <div className="relative">
-              {mediaType === "video" &&
-              !isEdit &&
-              videoMode === "follow" &&
-              mediaPreview ? (
+              {pickingFollowTarget && mediaPreview ? (
                 <FollowTargetPicker
                   src={mediaPreview}
                   target={followTarget}
@@ -709,13 +723,15 @@ export default function FeedNewPage() {
                   className="max-h-64 w-full rounded-2xl object-cover"
                 />
               )}
-              <button
-                type="button"
-                onClick={removeMedia}
-                className="absolute right-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white hover:bg-black/80"
-              >
-                삭제
-              </button>
+              {!pickingFollowTarget && (
+                <button
+                  type="button"
+                  onClick={removeMedia}
+                  className="absolute right-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white hover:bg-black/80"
+                >
+                  삭제
+                </button>
+              )}
             </div>
           ) : (
             <label className="flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed border-[#D9D3E8] py-[22px] transition hover:opacity-80">
