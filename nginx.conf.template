@@ -80,10 +80,22 @@ server {
         proxy_set_header Connection "";
     }
 
+    # ── SPA 진입점: 항상 재검증 ──
+    # Cache-Control 이 없으면 브라우저/WebView 가 Last-Modified 기준 휴리스틱 캐싱(경과시간의
+    # 10%)을 해, 배포 후에도 며칠간 옛 index.html → 옛 JS 번들(immutable 캐시)로 옛 화면을 띄운다
+    # (2026-10-13 모바일 앱 WebView 에서 들찍 버튼 미노출로 발견, 캐시 삭제로 해소 확인).
+    # no-cache = 매번 서버에 확인하되 안 바뀌었으면 304 라 비용은 거의 없음.
+    # `/` 는 index 지시어로, SPA 경로는 try_files 로 내부 이동해 모두 이 location 을 탄다.
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
     # ── SPA history fallback ──
     # 정적 파일이 있으면 그대로, 없으면 index.html (React Router가 처리)
+    # 해시 없는 루트 정적 파일(favicon 등)도 같은 이유로 재검증.
     location / {
         try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
     }
 
     # ── 정적 자산 캐싱 ──
