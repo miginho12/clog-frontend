@@ -19,6 +19,9 @@ import {
 } from "../api/client";
 
 const MAX_VIDEO_SECONDS = 60; // 영상 1분 제한
+// 영상 용량 상한 — 백엔드 media_max_video_bytes 와 같은 값. 큰 영상은 분할 업로드로 올라간다
+// (lib/multipartUpload). 미리 막아 알 수 없는 413/400 대신 이유를 보여준다.
+const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 const V_GRADES = Array.from({ length: 18 }, (_, i) => `V${i}`); // V0~V17 (실데이터 전체 범위)
 
 const today = () => new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -184,6 +187,13 @@ export default function FeedNewPage() {
     const isImage = file.type.startsWith("image/");
     if (!isVideo && !isImage) {
       setError("이미지 또는 영상 파일만 업로드할 수 있습니다");
+      return;
+    }
+
+    if (isVideo && file.size > MAX_VIDEO_BYTES) {
+      setError(
+        `영상은 ${MAX_VIDEO_BYTES / 1024 / 1024}MB 이하만 업로드할 수 있어요 (선택: ${Math.round(file.size / 1024 / 1024)}MB)`,
+      );
       return;
     }
 

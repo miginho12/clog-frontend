@@ -12,6 +12,11 @@ import {
   createClimbingLog,
   type ClimbingLogCreateInput,
 } from "../api/client";
+import {
+  abandonMultipart,
+  shouldUseMultipart,
+  uploadMultipart,
+} from "./multipartUpload";
 
 // 업로드 진행 단계
 type UploadPhase = "uploading" | "creating" | "done" | "error";
@@ -66,17 +71,25 @@ export function UploadProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        const presign = await presignMedia(file.type, file.name);
-        await uploadToPresigned(presign.upload_url, file, (pct) => {
+        const onProgress = (pct: number) =>
           setState((s) =>
             s.phase === "uploading" ? { ...s, progress: pct } : s,
           );
-        });
+        // 큰 영상은 분할 업로드(Cloudflare 요청당 100MB 한도), 나머지는 기존 단일 PUT.
+        // 분할 업로드는 실패해도 이어 올리기 기록이 남아, retry 시 빠진 조각만 올린다.
+        let uploaded: { public_url: string; category: string };
+        if (shouldUseMultipart(file)) {
+          uploaded = await uploadMultipart(file, onProgress);
+        } else {
+          const presign = await presignMedia(file.type, file.name);
+          await uploadToPresigned(presign.upload_url, file, onProgress);
+          uploaded = presign;
+        }
         setState((s) => ({ ...s, phase: "creating", progress: 100 }));
         await createClimbingLog({
           ...payload,
-          media_url: presign.public_url,
-          media_type: presign.category,
+          media_url: uploaded.public_url,
+          media_type: uploaded.category,
         });
         setState((s) => ({ ...s, phase: "done", active: true }));
         lastAttempt.current = null;
@@ -102,6 +115,9 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   }, [run]);
 
   const dismiss = useCallback(() => {
+    // 실패한 업로드를 포기 → 분할 업로드였다면 서버의 조각과 이어 올리기 기록 정리
+    const attempt = lastAttempt.current;
+    if (attempt && shouldUseMultipart(attempt.file)) void abandonMultipart(attempt.file);
     lastAttempt.current = null;
     setState(IDLE);
   }, []);

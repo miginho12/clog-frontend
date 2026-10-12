@@ -905,6 +905,111 @@ export async function uploadToPresigned(
   });
 }
 
+// ── 분할(multipart) 업로드 ──
+// Cloudflare 가 요청 1건당 100MB 를 넘으면 413 으로 끊어, 큰 영상은 조각으로 올린다.
+// 흐름: init → 조각별 presigned URL 로 PUT → (끊기면 status 로 빠진 조각만) → complete.
+// 업로드 순서 제어(동시성·재시도·이어 올리기)는 lib/multipartUpload.ts.
+
+export interface MultipartPartUrl {
+  part_number: number; // 1부터
+  url: string;
+}
+
+export interface MultipartInitResponse {
+  upload_id: string;
+  object_key: string;
+  public_url: string;
+  category: string; // "video"
+  part_size: number;
+  part_count: number;
+  parts: MultipartPartUrl[];
+  expires_in: number;
+}
+
+export interface MultipartRef {
+  object_key: string;
+  upload_id: string;
+}
+
+export interface MultipartStatusResponse {
+  uploaded: number[]; // 크기가 맞게 올라간 조각 번호
+  parts: MultipartPartUrl[]; // 아직 올려야 할 조각 (URL 재발급)
+  expires_in: number;
+}
+
+export interface MultipartCompleteResponse {
+  object_key: string;
+  public_url: string;
+  category: string;
+}
+
+async function postMedia<T>(path: string, body: unknown): Promise<T> {
+  const res = await authFetch(
+    `${API_BASE_URL}/media/multipart/${path}`,
+    { method: "POST", body: JSON.stringify(body) },
+    (t) => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${t}`,
+    }),
+  );
+  return handleResponse<T>(res);
+}
+
+export function initMultipart(
+  contentType: string,
+  filename: string,
+  size: number,
+): Promise<MultipartInitResponse> {
+  return postMedia("init", { content_type: contentType, filename, size });
+}
+
+export function multipartStatus(
+  ref: MultipartRef,
+  size: number,
+): Promise<MultipartStatusResponse> {
+  return postMedia("status", { ...ref, size });
+}
+
+export function completeMultipart(
+  ref: MultipartRef,
+  size: number,
+): Promise<MultipartCompleteResponse> {
+  return postMedia("complete", { ...ref, size });
+}
+
+export async function abortMultipart(ref: MultipartRef): Promise<void> {
+  const res = await authFetch(
+    `${API_BASE_URL}/media/multipart/abort`,
+    { method: "POST", body: JSON.stringify(ref) },
+    (t) => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${t}`,
+    }),
+  );
+  if (!res.ok) return handleResponse<void>(res);
+}
+
+// 조각 하나를 presigned URL 로 PUT. onProgress 는 이 조각에서 보낸 바이트 수.
+// 실패 시 ApiError(status) — 403 은 보통 presigned URL 만료(호출측이 재발급 후 재시도).
+export function uploadPartToPresigned(
+  url: string,
+  blob: Blob,
+  onProgress?: (loadedBytes: number) => void,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.upload.onprogress = (e) => onProgress?.(e.loaded);
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new ApiError(xhr.status, `조각 업로드 실패 (${xhr.status})`, "upload_failed"));
+    };
+    xhr.onerror = () =>
+      reject(new ApiError(0, "네트워크 오류로 업로드 실패", "upload_failed"));
+    xhr.send(blob);
+  });
+}
+
 // ── 댓글 (comments) ──
 
 export interface CommentAuthor {
