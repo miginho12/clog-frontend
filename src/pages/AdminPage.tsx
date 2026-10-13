@@ -6,9 +6,11 @@ import {
   ApiError,
   createGymGradeSystem,
   deleteGymGradeSystem,
+  getGymGradeSystemHistory,
   listGymGradeSystems,
   updateGymGradeSystem,
   type GymGradeSystem,
+  type GymGradeSystemChange,
 } from "../api/client";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 
@@ -52,6 +54,7 @@ export default function AdminPage() {
   const [editGymName, setEditGymName] = useState("");
   const [editBrandName, setEditBrandName] = useState("");
   const [editDifficultyOffset, setEditDifficultyOffset] = useState(0);
+  const [editReason, setEditReason] = useState(""); // 변경 사유 → 서버 이력 (ADR-069)
   const [editSaving, setEditSaving] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -142,6 +145,7 @@ export default function AdminPage() {
     setEditGymName(g.gym_name);
     setEditBrandName(g.brand_name ?? "");
     setEditDifficultyOffset(g.difficulty_offset);
+    setEditReason("");
   }
 
   async function handleUpdate(id: string) {
@@ -173,6 +177,7 @@ export default function AdminPage() {
         editBrandName.trim() || null,
         editDifficultyOffset,
         trimmedName,
+        editReason,
       );
       setGyms((prev) => prev.map((x) => (x.id === id ? updated : x)));
       setEditId(null);
@@ -458,6 +463,16 @@ export default function AdminPage() {
                     );
                   })}
                 </div>
+                <label className="mb-1.5 block text-[11px] font-bold text-muted">
+                  변경 사유 (선택 — 보정치·색 순서는 모든 사용자 점수에 반영돼요)
+                </label>
+                <input
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value)}
+                  maxLength={200}
+                  placeholder="예: 회원 체감상 같은 색이 한 단계 더 어려움"
+                  className="mb-2 w-full rounded-xl bg-input px-3 py-2 text-xs text-title outline-none"
+                />
                 <button
                   type="button"
                   onClick={() => handleUpdate(g.id)}
@@ -466,6 +481,7 @@ export default function AdminPage() {
                 >
                   {editSaving ? "저장 중…" : "저장"}
                 </button>
+                <GymHistory gymId={g.id} />
               </div>
             ) : (
               <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-line pt-3">
@@ -481,6 +497,75 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── 변경 이력 (ADR-069) ── 펼칠 때 불러온다. 보정치·색 순서 변경은 개인 점수를 바꾸므로 추적용.
+const ACTION_LABEL: Record<GymGradeSystemChange["action"], string> = {
+  create: "등록",
+  update: "수정",
+  delete: "삭제",
+  sync: "동기화",
+};
+
+function describeChange(c: GymGradeSystemChange): string[] {
+  const b = c.before;
+  const a = c.after;
+  if (!b && a) return [`보정치 ${a.difficulty_offset.toFixed(2)} · ${a.color_order.length}색`];
+  if (!b || !a) return [];
+  const lines: string[] = [];
+  if (b.difficulty_offset !== a.difficulty_offset)
+    lines.push(`보정치 ${b.difficulty_offset.toFixed(2)} → ${a.difficulty_offset.toFixed(2)}`);
+  if (b.color_order.join() !== a.color_order.join())
+    lines.push(`색 순서 ${b.color_order.length}색 → ${a.color_order.length}색 (${a.color_order.map(colorLabel).join("·")})`);
+  if (b.gym_name !== a.gym_name) lines.push(`이름 ${b.gym_name} → ${a.gym_name}`);
+  if (b.brand_name !== a.brand_name) lines.push(`브랜드 ${b.brand_name ?? "없음"} → ${a.brand_name ?? "없음"}`);
+  if (b.is_official !== a.is_official) lines.push(a.is_official ? "공식으로 전환" : "비공식으로 전환");
+  return lines;
+}
+
+function GymHistory({ gymId }: { gymId: string }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<GymGradeSystemChange[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && items === null) {
+      getGymGradeSystemHistory(gymId)
+        .then(setItems)
+        .catch(() => setError("이력을 불러오지 못했어요"));
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <button type="button" onClick={toggle} className="text-[11.5px] font-bold text-muted">
+        {open ? "▾" : "▸"} 변경 이력 보기
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2" data-testid="gym-history">
+          {error && <p className="text-[11px] text-danger">{error}</p>}
+          {items === null && !error && <p className="text-[11px] text-muted">불러오는 중…</p>}
+          {items?.length === 0 && <p className="text-[11px] text-muted">기록된 이력이 없어요 (이력 기능 도입 전 변경은 남아 있지 않음)</p>}
+          {items?.map((c) => (
+            <div key={c.id} className="rounded-xl bg-input px-3 py-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[11.5px] font-bold text-title">{ACTION_LABEL[c.action]}</span>
+                <span className="text-[10.5px] text-hint">
+                  {new Date(c.created_at).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" })}
+                </span>
+              </div>
+              {describeChange(c).map((line) => (
+                <p key={line} className="text-[11px] text-secondary">{line}</p>
+              ))}
+              {c.reason && <p className="mt-0.5 text-[11px] text-muted">사유: {c.reason}</p>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

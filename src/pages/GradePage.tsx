@@ -33,8 +33,7 @@ function colorLevel(score: number, system: GymGradeSystem): string {
 // 암장별 환산 결과 (해당 암장 색 체계로 내 완등 실력을 투영한 값)
 interface GymConversion {
   gym: GymGradeSystem;
-  ratingLabel: string | null; // 색 코드
-  step: number | null; // color_order 상 몇 번째 단계인지 (1-base)
+  ratingLabel: string | null; // 색 코드 (n/N 단계는 ConversionCell 이 계산)
 }
 
 export default function GradePage() {
@@ -91,10 +90,10 @@ export default function GradePage() {
       if (cancelled) return;
       const rows: GymConversion[] = [];
       for (const r of results) {
-        if (!r || r.res.color.counted_logs === 0) continue;
-        const label = r.res.color.top_rating_label;
-        const step = label ? r.gym.color_order.indexOf(label) + 1 : null;
-        rows.push({ gym: r.gym, ratingLabel: label, step: step || null });
+        // 최고 완등 기록이 있으면 환산 대상 — counted_logs 는 '최근 90일 점수 반영 수'라
+        // 90일 넘게 쉰 사람의 환산 표가 통째로 사라지지 않게 쓰지 않는다 (ADR-068)
+        if (!r || !r.res.color.top_rating_label) continue;
+        rows.push({ gym: r.gym, ratingLabel: r.res.color.top_rating_label });
       }
       setConversions(rows);
     });
@@ -174,6 +173,7 @@ export default function GradePage() {
               return `${colorLabel(colorLevel(grade.color.comprehensive_score, sys))} 수준`;
             })()}
             ratingLabel={grade.color.top_rating_label}
+            gaugeGym={allGyms.find((g) => g.gym_name === grade.color.base_gym) ?? null}
             countedLogs={grade.color.counted_logs}
             nextGradeLabel={grade.color.next_grade_label}
             readinessPct={grade.color.readiness_pct}
@@ -204,7 +204,7 @@ export default function GradePage() {
             암장 간 난이도 환산
           </div>
           <div className="mb-3.5 mt-0.5 text-[11px] text-muted">
-            내 최고 완등 기준, 각 암장에서 비슷한 난이도
+            최고 완등과 평소 실력(종합 점수)을 각 암장 색으로 환산
           </div>
           <div className="flex flex-col gap-2.5">
             {conversions.map((c) => (
@@ -220,27 +220,19 @@ export default function GradePage() {
                     컬러 {c.gym.color_order.length}단계
                   </div>
                 </div>
-                {c.ratingLabel && (
-                  // 고정폭 grid — 숫자 자릿수(9/9 vs 11/11)가 달라도 점 위치가
-                  // 행마다 밀리지 않도록 컬럼 폭을 고정한다.
-                  <div className="grid shrink-0 grid-cols-[14px_38px_32px] items-center gap-x-2">
-                    <span
-                      className="h-[14px] w-[14px] justify-self-center rounded-full border border-black/8"
-                      style={{ backgroundColor: colorInfo(c.ratingLabel).bg }}
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {c.ratingLabel && (
+                    <ConversionCell kind="최고" code={c.ratingLabel} gym={c.gym} />
+                  )}
+                  {grade.color.counted_days > 0 && (
+                    // 평소 실력 = 종합 점수를 이 암장 보정치 반영해 색으로 (ADR-068)
+                    <ConversionCell
+                      kind="평소"
+                      code={colorLevel(grade.color.comprehensive_score, c.gym)}
+                      gym={c.gym}
                     />
-                    <span
-                      className="truncate text-[13px] font-extrabold"
-                      style={{ color: colorTextOnWhite(c.ratingLabel) }}
-                    >
-                      {colorLabel(c.ratingLabel)}
-                    </span>
-                    {c.step && (
-                      <span className="text-right text-[10.5px] font-semibold text-hint">
-                        {c.step}/{c.gym.color_order.length}
-                      </span>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ))}
             {grade.v_scale.counted_logs > 0 &&
@@ -287,6 +279,7 @@ function HeroTrackCard({
   countedDays,
   levelText = null,
   ratingLabel,
+  gaugeGym = null,
   countedLogs = 1,
   colorTrack = false,
   nextGradeLabel = null,
@@ -298,6 +291,7 @@ function HeroTrackCard({
   countedDays: number;
   levelText?: string | null;
   ratingLabel: string | null;
+  gaugeGym?: GymGradeSystem | null; // 색 띠 게이지 기준 암장 (컬러 트랙)
   countedLogs?: number;
   colorTrack?: boolean;
   nextGradeLabel?: string | null;
@@ -357,6 +351,8 @@ function HeroTrackCard({
         {levelText ? `${levelText} · ` : ""}최근 운동 {countedDays}일 기준
       </div>
 
+      {gaugeGym && <ScoreGauge score={score} gym={gaugeGym} />}
+
       {nextGradeLabel && readinessPct !== null && (
         <div className="mt-4">
           <div className="text-xs font-semibold opacity-90">
@@ -373,6 +369,70 @@ function HeroTrackCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── 점수 색 띠 게이지 (ADR-068) ──
+// 기준 암장 색을 쉬운→어려운 순으로 같은 폭으로 놓고 내 점수 위치를 표시.
+// 색 i 의 점수 = (i/(N-1) + 보정치) × 900 이라 색 사이 간격이 일정하다 → 칸 i 의
+// 가운데 = (idx + 0.5)/N 에 맞추면 "정확히 그 색 수준"일 때 그 칸 한가운데.
+// 양 끝 색의 점수를 적어 "어디가 고점인지" 보이게 한다.
+function ScoreGauge({ score, gym }: { score: number; gym: GymGradeSystem }) {
+  const n = gym.color_order.length;
+  const first = gym.color_order[0];
+  const last = gym.color_order[n - 1];
+  const pointsOf = (i: number) => Math.round((i / (n - 1) + gym.difficulty_offset) * FULL_SCALE);
+  const idx = Math.min(n - 1, Math.max(0, (score / FULL_SCALE - gym.difficulty_offset) * (n - 1)));
+  const markerPct = ((idx + 0.5) / n) * 100;
+  return (
+    <div className="mt-3" data-testid="score-gauge">
+      <div className="relative">
+        <div className="flex gap-[2px] rounded-full bg-white/25 p-[3px]">
+          {gym.color_order.map((c) => (
+            <span
+              key={c}
+              className="h-2 flex-1 first:rounded-l-full last:rounded-r-full"
+              style={{ backgroundColor: colorInfo(c).bg }}
+              title={colorLabel(c)}
+            />
+          ))}
+        </div>
+        <span
+          aria-label={`내 위치 ${Math.round(score)}점`}
+          className="absolute -top-[3px] h-5 w-[3px] -translate-x-1/2 rounded-full bg-white shadow-[0_0_0_1.5px_rgba(43,26,102,.85)]"
+          style={{ left: `${markerPct}%` }}
+        />
+      </div>
+      <div className="mt-1 flex justify-between text-[10.5px] font-semibold opacity-85">
+        <span>
+          {colorLabel(first)} {pointsOf(0)}
+        </span>
+        <span>
+          {colorLabel(last)} {pointsOf(n - 1)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── 환산 표 한 칸: "최고/평소 ● 색 n/N" ──
+// 고정폭 grid — 숫자 자릿수(9/9 vs 11/11)가 달라도 점 위치가 행마다 밀리지 않게.
+function ConversionCell({ kind, code, gym }: { kind: string; code: string; gym: GymGradeSystem }) {
+  const step = gym.color_order.indexOf(code) + 1;
+  return (
+    <div className="grid grid-cols-[24px_14px_38px_32px] items-center gap-x-2">
+      <span className="text-[10.5px] font-semibold text-muted">{kind}</span>
+      <span
+        className="h-[14px] w-[14px] justify-self-center rounded-full border border-black/8"
+        style={{ backgroundColor: colorInfo(code).bg }}
+      />
+      <span className="truncate text-[13px] font-extrabold" style={{ color: colorTextOnWhite(code) }}>
+        {colorLabel(code)}
+      </span>
+      <span className="text-right text-[10.5px] font-semibold text-hint">
+        {step > 0 ? `${step}/${gym.color_order.length}` : ""}
+      </span>
     </div>
   );
 }

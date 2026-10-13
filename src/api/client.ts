@@ -636,6 +636,8 @@ export async function updateGymGradeSystem(
   // 암장 이름 개명 — admin 전용(비admin이 보내면 서버가 무시). 생략하면
   // 기존 이름 유지. 개명 시 climbing_logs.gym_name 도 서버에서 일괄 갱신됨.
   gymName?: string,
+  // 변경 사유 (선택) — 서버 변경 이력에 남는다 (ADR-069)
+  reason?: string,
 ): Promise<GymGradeSystem> {
   const res = await authFetch(
     `${API_BASE_URL}/gym-grade-systems/${id}`,
@@ -646,6 +648,7 @@ export async function updateGymGradeSystem(
         brand_name: brandName ?? null,
         difficulty_offset: difficultyOffset ?? 0,
         gym_name: gymName ?? null,
+        reason: reason?.trim() || null,
       }),
     },
     (t) => ({
@@ -654,6 +657,32 @@ export async function updateGymGradeSystem(
     }),
   );
   return handleResponse<GymGradeSystem>(res);
+}
+
+// 짐 색체계 변경 이력 (admin, ADR-069) — 보정치는 개인 점수를 직접 바꾸므로 추적용
+export interface GymGradeSystemSnapshot {
+  gym_name: string;
+  brand_name: string | null;
+  color_order: string[];
+  is_official: boolean;
+  difficulty_offset: number;
+}
+
+export interface GymGradeSystemChange {
+  id: string;
+  gym_system_id: string;
+  gym_name: string;
+  action: "create" | "update" | "delete" | "sync";
+  changed_by: string | null; // null = 동기화 등 시스템 변경
+  before: GymGradeSystemSnapshot | null;
+  after: GymGradeSystemSnapshot | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export async function getGymGradeSystemHistory(id: string): Promise<GymGradeSystemChange[]> {
+  const res = await authFetch(`${API_BASE_URL}/gym-grade-systems/${id}/history`);
+  return handleResponse<GymGradeSystemChange[]>(res);
 }
 
 export async function deleteGymGradeSystem(id: string): Promise<void> {
