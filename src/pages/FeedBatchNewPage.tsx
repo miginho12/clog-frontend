@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 import { useUpload } from "../lib/upload";
+import { localDateString } from "../lib/date";
 import GymPicker from "../components/GymPicker";
 import FollowTargetPicker from "../components/FollowTargetPicker";
 import {
@@ -21,7 +22,6 @@ const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 const MAX_TAGS = 10;
 const V_GRADES = Array.from({ length: 18 }, (_, i) => `V${i}`);
 
-const today = () => new Date().toISOString().slice(0, 10);
 
 function formatDateHeader(iso: string): string {
   const [, m, d] = iso.split("-").map(Number);
@@ -74,7 +74,7 @@ export default function FeedBatchNewPage() {
   const navigate = useNavigate();
   const { enqueueUploads } = useUpload();
 
-  const [climbedAt, setClimbedAt] = useState(today());
+  const [climbedAt, setClimbedAt] = useState(localDateString());
   const [gradeSystem, setGradeSystem] = useState<GradeSystemType>("color");
   const [gymName, setGymName] = useState("");
   const [visibility, setVisibility] = useState<VisibilityType>("public");

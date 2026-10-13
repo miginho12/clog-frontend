@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 import { useUpload } from "../lib/upload";
+import { localDateString } from "../lib/date";
 import FollowTargetPicker from "../components/FollowTargetPicker";
 import {
   createClimbingLog,
@@ -24,7 +25,6 @@ const MAX_VIDEO_SECONDS = 60; // 영상 1분 제한
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 const V_GRADES = Array.from({ length: 18 }, (_, i) => `V${i}`); // V0~V17 (실데이터 전체 범위)
 
-const today = () => new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
 function formatDateHeader(iso: string): string {
   const [, m, d] = iso.split("-").map(Number);
@@ -52,7 +52,7 @@ export default function FeedNewPage() {
   const [colorValue, setColorValue] = useState(""); // color 색 선택값
   const [isSuccess, setIsSuccess] = useState(true);
   const [attempts, setAttempts] = useState(1);
-  const [climbedAt, setClimbedAt] = useState(today());
+  const [climbedAt, setClimbedAt] = useState(localDateString());
   const [categories, setCategories] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   const [visibility, setVisibility] = useState<VisibilityType>("public");
