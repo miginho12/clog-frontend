@@ -12,6 +12,7 @@ import FollowListPage from "./pages/FollowListPage";
 import FeedPage from "./pages/FeedPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import FeedNewPage from "./pages/FeedNewPage";
+import FeedBatchNewPage from "./pages/FeedBatchNewPage";
 import GradePage from "./pages/GradePage";
 import SearchPage from "./pages/SearchPage";
 import AppLayout from "./components/AppLayout";
@@ -53,6 +54,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <FeedNewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feed/batch"
+            element={
+              <ProtectedRoute>
+                <FeedBatchNewPage />
               </ProtectedRoute>
             }
           />

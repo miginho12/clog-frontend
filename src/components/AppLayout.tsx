@@ -181,9 +181,10 @@ export default function AppLayout() {
 
   const activeIdx = currentIndex();
 
-  // 기록 작성(/feed/new)·수정(/feed/edit/:id) 화면은 바텀시트 스타일로 취급.
+  // 기록 작성(/feed/new)·일괄 작성(/feed/batch)·수정(/feed/edit/:id) 화면은 바텀시트 스타일로 취급.
   const isSheet =
     location.pathname === "/feed/new" ||
+    location.pathname === "/feed/batch" ||
     location.pathname.startsWith("/feed/edit/");
 
   return (

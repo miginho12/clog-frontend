@@ -761,6 +761,16 @@ export default function FeedNewPage() {
               />
             </label>
           )}
+          {/* 일괄 업로드 진입 — 신규 작성에서 아직 파일을 고르지 않았을 때만 */}
+          {!isEdit && !mediaPreview && (
+            <button
+              type="button"
+              onClick={() => navigate("/feed/batch")}
+              className="mt-2 w-full text-center text-[12px] font-bold text-primary"
+            >
+              여러 개 한 번에 올리기 →
+            </button>
+          )}
         </Field>
 
         {/* 메모 */}
