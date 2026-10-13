@@ -469,6 +469,7 @@ export interface VScaleGrade {
   top_rating: number | null;
   top_rating_label: string | null;
   counted_logs: number;
+  counted_days: number; // 종합점수에 반영된 운동일 수 (하루 점수 평균, ADR-068)
   // 다음 등급 도전 진척도 (ADR-050)
   next_grade_label: string | null;
   readiness_pct: number | null;
@@ -479,6 +480,7 @@ export interface ColorGrade {
   base_gym: string | null;
   top_rating_label: string | null;
   counted_logs: number;
+  counted_days: number; // 종합점수에 반영된 운동일 수 (ADR-068)
   // 다음 등급 도전 진척도 (ADR-050). 최상위 색이거나 완등 0건이면 null
   next_grade_label: string | null;
   readiness_pct: number | null;
@@ -506,6 +508,7 @@ export interface GradeTimelinePoint {
   date: string; // YYYY-MM-DD
   score: number;
   count: number;
+  days: number; // 그 시점 점수에 반영된 운동일 수 (ADR-068)
 }
 
 // GET /me/grade/timeline : 주별 종합 점수 추이 (인증 필요)

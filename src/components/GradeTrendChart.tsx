@@ -33,7 +33,8 @@ export default function GradeTrendChart({ data, weeks, onWeeksChange }: Props) {
 
   const scores = data.map((d) => d.score);
   const rawMax = Math.max(...scores, 1);
-  const yMax = Math.ceil(rawMax);
+  // 100 단위 올림 — 10색 암장 한 단계 = 100점이라 눈금이 곧 등급 단계 (ADR-068)
+  const yMax = Math.ceil(rawMax / 100) * 100;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_TOP - PAD_BOTTOM;
 
@@ -53,7 +54,8 @@ export default function GradeTrendChart({ data, weeks, onWeeksChange }: Props) {
 
   const peakIdx = scores.indexOf(Math.max(...scores));
   const last = pts[pts.length - 1];
-  const yTicks = [0, yMax / 2, yMax];
+  // 가운데 눈금도 100 단위 (등급 단계 경계) — yMax=100 이면 중복이라 Set 으로 제거
+  const yTicks = [...new Set([0, Math.round(yMax / 200) * 100, yMax])];
   const xLabelIdx = [0, Math.floor(data.length / 2), data.length - 1];
   const fmtDate = (iso: string) => {
     const [, m, d] = iso.split("-");
@@ -69,7 +71,7 @@ export default function GradeTrendChart({ data, weeks, onWeeksChange }: Props) {
         <h3 className="text-sm font-bold text-title">성장 추이</h3>
       </div>
       <p className="mb-3 text-xs text-muted">
-        완등 기록 기반 상대적 실력 흐름 (절대 등급 아님)
+        각 시점의 종합 점수 (최근 운동일 하루 점수 평균)
       </p>
 
       {/* 기간 선택 세그먼트 */}
@@ -100,10 +102,16 @@ export default function GradeTrendChart({ data, weeks, onWeeksChange }: Props) {
         <span className="text-sm font-medium text-secondary">
           {fmtDate(shownPt.date)}
         </span>
-        <span className="text-lg font-bold text-primary">
-          {shownPt.score.toFixed(2)}
-        </span>
-        <span className="text-xs text-muted">({shownPt.count}개 반영)</span>
+        {shownPt.days > 0 ? (
+          <>
+            <span className="text-lg font-bold text-primary">
+              {Math.round(shownPt.score)}
+            </span>
+            <span className="text-xs text-muted">({shownPt.days}일 반영)</span>
+          </>
+        ) : (
+          <span className="text-xs text-muted">기록 없음</span>
+        )}
       </div>
 
       <svg
@@ -125,7 +133,7 @@ export default function GradeTrendChart({ data, weeks, onWeeksChange }: Props) {
             <g key={t}>
               <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="#EBE7F4" strokeWidth="1" />
               <text x={PAD_L - 5} y={y + 3} textAnchor="end" fontSize="8" fill="#9C93B5">
-                {t.toFixed(t === yMax || t === 0 ? 0 : 1)}
+                {Math.round(t)}
               </text>
             </g>
           );
@@ -160,7 +168,7 @@ export default function GradeTrendChart({ data, weeks, onWeeksChange }: Props) {
 
       <div className="mt-2 flex items-baseline gap-1.5 border-t border-line pt-3">
         <span className="text-xs text-secondary">점수</span>
-        <span className="text-base font-bold text-title">{last.score.toFixed(2)}</span>
+        <span className="text-base font-bold text-title">{Math.round(last.score)}</span>
       </div>
     </div>
   );

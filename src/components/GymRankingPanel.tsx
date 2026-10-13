@@ -110,7 +110,11 @@ export default function GymRankingPanel({ gymName }: { gymName: string }) {
 
   return (
     <div className="rounded-card-lg bg-white p-4 shadow-[0_2px_12px_rgba(90,70,140,.06)]">
-      <h2 className="mb-3 text-[13px] font-extrabold text-title">{gymName} 랭킹</h2>
+      <h2 className="text-[13px] font-extrabold text-title">{gymName} 랭킹</h2>
+      {/* 랭킹은 기존 상위 기록 합산 산식 유지 — 개인 종합점수(하루 점수 평균)와 단위가 다르다 */}
+      <p className="mb-3 mt-0.5 text-[11px] text-muted">
+        이 암장 기록의 상위 기록 합산 점수예요 (그레이드 탭 종합 점수와 단위가 달라요)
+      </p>
 
       <div className="mb-3 flex items-center gap-1.5 rounded-input bg-segment p-1">
         {PERIOD_TABS.map((tab) => (

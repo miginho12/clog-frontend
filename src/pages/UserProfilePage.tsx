@@ -397,7 +397,7 @@ export default function UserProfilePage() {
           </div>
           <div className="rounded-[18px] bg-white px-2 py-3.5 text-center shadow-card">
             <div className="text-[19px] font-extrabold text-accent">
-              {stats.current_score.toFixed(1)}
+              {Math.round(stats.current_score)}
             </div>
             <div className="text-[11px] text-muted">점수</div>
           </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   getMyGrade,
   getMyGradeTimeline,
+  listGymGradeSystems,
   listGymGradeSystemRepresentatives,
   ApiError,
   type MeGradeResponse,
@@ -12,6 +13,19 @@ import {
 import { clearTokens } from "../lib/auth";
 import GradeTrendChart from "../components/GradeTrendChart";
 import { colorInfo, colorLabel, colorTextOnWhite } from "../lib/colorMap";
+
+// 점수 단위 (ADR-068): 암장 내 위치(0~1, + 암장 보정치) × 900. 10색 암장 한 단계 = 100점.
+const FULL_SCALE = 900;
+const V_SCALE_MAX = 17;
+
+// 종합 점수를 기준 암장 색으로 해석 — "서울숲 기준 남색 수준".
+// 점수 = (색 위치 + 그 암장 보정치) × 900 이므로 역으로 위치를 구해 가장 가까운 색.
+function colorLevel(score: number, system: GymGradeSystem): string {
+  const n = system.color_order.length;
+  const pos = score / FULL_SCALE - system.difficulty_offset;
+  const idx = Math.min(n - 1, Math.max(0, Math.round(pos * (n - 1))));
+  return system.color_order[idx];
+}
 
 // 암장별 환산 결과 (해당 암장 색 체계로 내 완등 실력을 투영한 값)
 interface GymConversion {
@@ -24,6 +38,8 @@ export default function GradePage() {
   const navigate = useNavigate();
   const [grade, setGrade] = useState<MeGradeResponse | null>(null);
   const [gyms, setGyms] = useState<GymGradeSystem[]>([]);
+  // 점수 해석용 전체 암장 (기준 암장이 대표 목록에 없을 수 있음)
+  const [allGyms, setAllGyms] = useState<GymGradeSystem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeline, setTimeline] = useState<GradeTimelinePoint[]>([]);
@@ -37,6 +53,14 @@ export default function GradePage() {
       .then(setGyms)
       .catch(() => {
         // 짐 목록 실패는 치명적이지 않음 (드롭다운만 비게 됨)
+      });
+  }, []);
+
+  useEffect(() => {
+    listGymGradeSystems()
+      .then(setAllGyms)
+      .catch(() => {
+        // 실패해도 점수는 표시 (등급 해석 문구만 빠짐)
       });
   }, []);
 
@@ -107,11 +131,13 @@ export default function GradePage() {
     <div className="space-y-3.5">
       {grade && (
         <>
-          {/* ── v_scale 히어로 카드 (기록 있을 때만) ── */}
-          {grade.v_scale.counted_logs > 0 && (
+          {/* ── v_scale 히어로 카드 (V 완등 기록 있을 때만 — 90일 넘게 쉬어도 카드는 유지) ── */}
+          {grade.v_scale.top_rating_label && (
             <HeroTrackCard
               title="V 스케일 종합 점수"
               score={grade.v_scale.comprehensive_score}
+              countedDays={grade.v_scale.counted_days}
+              levelText={`V${Math.round((grade.v_scale.comprehensive_score / FULL_SCALE) * V_SCALE_MAX)} 수준`}
               ratingLabel={grade.v_scale.top_rating_label}
               nextGradeLabel={grade.v_scale.next_grade_label}
               readinessPct={grade.v_scale.readiness_pct}
@@ -127,6 +153,13 @@ export default function GradePage() {
                 : "내 종합 점수"
             }
             score={grade.color.comprehensive_score}
+            countedDays={grade.color.counted_days}
+            levelText={(() => {
+              const sys = allGyms.find((g) => g.gym_name === grade.color.base_gym);
+              if (!sys) return null;
+              // 카드 제목에 기준 암장이 이미 있어 색만 표시
+              return `${colorLabel(colorLevel(grade.color.comprehensive_score, sys))} 수준`;
+            })()}
             ratingLabel={grade.color.top_rating_label}
             countedLogs={grade.color.counted_logs}
             nextGradeLabel={grade.color.next_grade_label}
@@ -156,8 +189,7 @@ export default function GradePage() {
             암장 간 난이도 환산
           </div>
           <div className="mb-3.5 mt-0.5 text-[11px] text-muted">
-            내 점수 {grade.color.comprehensive_score.toFixed(1)} 기준, 각
-            암장에서 도전할 만한 난이도
+            내 최고 완등 기준, 각 암장에서 비슷한 난이도
           </div>
           <div className="flex flex-col gap-2.5">
             {conversions.map((c) => (
@@ -237,6 +269,8 @@ export default function GradePage() {
 function HeroTrackCard({
   title,
   score,
+  countedDays,
+  levelText = null,
   ratingLabel,
   countedLogs = 1,
   colorTrack = false,
@@ -246,6 +280,8 @@ function HeroTrackCard({
 }: {
   title: string;
   score: number;
+  countedDays: number;
+  levelText?: string | null;
   ratingLabel: string | null;
   countedLogs?: number;
   colorTrack?: boolean;
@@ -254,10 +290,13 @@ function HeroTrackCard({
   onInfoClick?: () => void;
 }) {
   if (countedLogs === 0) {
+    // 최고 등급(전체 기간)은 있는데 반영된 날이 없음 = 90일 넘게 쉼
     return (
       <div className="bg-hero-gradient rounded-card-lg p-6 text-white">
         <div className="text-xs font-semibold opacity-85">{title}</div>
-        <p className="mt-4 text-sm opacity-80">아직 기록이 없어요</p>
+        <p className="mt-4 text-sm opacity-80">
+          {ratingLabel ? "최근 90일 완등 기록이 없어요" : "아직 기록이 없어요"}
+        </p>
       </div>
     );
   }
@@ -279,7 +318,7 @@ function HeroTrackCard({
       </div>
       <div className="mt-1.5 flex items-baseline gap-2">
         <span className="text-[44px] font-extrabold tracking-[-1px]">
-          {score.toFixed(1)}
+          {Math.round(score)}
         </span>
         {ratingLabel &&
           (colorTrack ? (
@@ -297,6 +336,10 @@ function HeroTrackCard({
               최고 {ratingLabel}
             </span>
           ))}
+      </div>
+
+      <div className="mt-1 text-[11px] font-semibold opacity-85">
+        {levelText ? `${levelText} · ` : ""}최근 운동 {countedDays}일 기준
       </div>
 
       {nextGradeLabel && readinessPct !== null && (
@@ -325,24 +368,28 @@ function HeroTrackCard({
 function ScoreInfoSheet({ onClose }: { onClose: () => void }) {
   const rules: { title: string; desc: string }[] = [
     {
-      title: "난이도가 클수록 점수가 크게 올라요",
-      desc: "등급이 한 단계 오를 때마다 점수 비중이 훨씬 커져요. 쉬운 문제를 여러 개 푸는 것보다 어려운 문제 하나를 완등하는 게 점수에 더 크게 반영돼요.",
+      title: "운동한 날마다 하루 점수를 매겨요",
+      desc: "그날 완등한 문제 중 가장 어려운 3개의 평균이 하루 점수예요. 워밍업으로 쉬운 문제를 기록해도 점수가 내려가지 않아요.",
     },
     {
-      title: "완등이 시도보다 훨씬 유리해요",
-      desc: "완등 기록이 가장 크게 반영되고, 시도(실패) 기록은 완등의 30% 정도로만 반영돼요. 그래도 시도 기록을 남기는 게 손해는 아니에요.",
+      title: "한 단계 오를 때마다 같은 폭으로 올라요",
+      desc: "10색 암장 기준으로 한 단계가 100점이에요(가장 쉬운 색 0점 ~ 가장 어려운 색 900점). 높은 등급에서도 한 단계 오르면 그만큼 바로 반영돼요.",
     },
     {
-      title: "최근 기록일수록 유리해요",
-      desc: "완등한 지 60일이 지날 때마다 그 기록의 반영 비중이 절반씩 서서히 줄어들어요. 꾸준히 최근 기록을 쌓는 게 중요해요.",
+      title: "암장마다 다른 난이도를 반영해요",
+      desc: "같은 '최고 색'이라도 암장마다 실제 난이도가 달라서, 암장별 난이도 보정이 더해져요. 더 어려운 암장의 완등이 더 높게 계산돼요.",
     },
     {
-      title: "적은 시도로 깰수록 조금 더 유리해요",
-      desc: "시도 횟수가 늘어난다고 점수가 크게 깎이진 않아요. 영향이 완만해서, 여러 번 시도해서 깼다고 크게 불리하지 않아요.",
+      title: "최근 10번의 운동 중 잘한 7번의 평균이에요",
+      desc: "컨디션이 안 좋은 날 3번은 빠지니까, 잘 안 된 날도 마음 편히 기록하세요. 90일이 지난 기록은 점수에서 빠져요.",
     },
     {
-      title: "상위 기록 위주로 합산돼요",
-      desc: "모든 기록을 다 더하는 게 아니라 상위 기록들 위주로 합산돼요. 기록 개수보다 기록의 '질'이 중요해요.",
+      title: "1트 완등은 보너스가 있어요",
+      desc: "한 번에 완등하면 +20점이에요. 여러 번 시도해서 깬 문제도 점수가 깎이지 않아요.",
+    },
+    {
+      title: "점수에는 완등만 들어가요",
+      desc: "시도(실패) 기록은 점수에 들어가지 않아요. 대신 운동 기록으로 쌓여서 꾸준함(잔디)에 보여요.",
     },
   ];
 
