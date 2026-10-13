@@ -3,15 +3,18 @@ import { useNavigate } from "react-router-dom";
 import {
   getMyGrade,
   getMyGradeTimeline,
+  getMyGradeActivity,
   listGymGradeSystems,
   listGymGradeSystemRepresentatives,
   ApiError,
   type MeGradeResponse,
   type GymGradeSystem,
   type GradeTimelinePoint,
+  type DailyActivity,
 } from "../api/client";
 import { clearTokens } from "../lib/auth";
 import GradeTrendChart from "../components/GradeTrendChart";
+import ActivityHeatmap from "../components/ActivityHeatmap";
 import { colorInfo, colorLabel, colorTextOnWhite } from "../lib/colorMap";
 
 // 점수 단위 (ADR-068): 암장 내 위치(0~1, + 암장 보정치) × 900. 10색 암장 한 단계 = 100점.
@@ -44,6 +47,7 @@ export default function GradePage() {
   const [loading, setLoading] = useState(true);
   const [timeline, setTimeline] = useState<GradeTimelinePoint[]>([]);
   const [weeks, setWeeks] = useState<number>(12); // 추이 조회 기간
+  const [activity, setActivity] = useState<DailyActivity[] | null>(null); // 잔디 (최근 26주)
   const [conversions, setConversions] = useState<GymConversion[]>([]);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
 
@@ -98,6 +102,15 @@ export default function GradePage() {
       cancelled = true;
     };
   }, [gyms]);
+
+  // 꾸준함 잔디 — 26주(182일) 고정
+  useEffect(() => {
+    getMyGradeActivity(182)
+      .then(setActivity)
+      .catch(() => {
+        // 잔디 실패는 치명적이지 않음 (카드만 안 뜸)
+      });
+  }, []);
 
   // 성장 추이 (주별 종합 점수) — 기간(weeks) 변경 시 재조회
   useEffect(() => {
@@ -181,6 +194,8 @@ export default function GradePage() {
           onWeeksChange={setWeeks}
         />
       )}
+
+      {activity && activity.length > 0 && <ActivityHeatmap data={activity} />}
 
       {/* 암장 간 난이도 환산 */}
       {grade && conversions.length > 0 && (

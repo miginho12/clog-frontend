@@ -511,6 +511,19 @@ export interface GradeTimelinePoint {
   days: number; // 그 시점 점수에 반영된 운동일 수 (ADR-068)
 }
 
+// GET /me/grade/activity : 일별 활동 (잔디, 인증 필요). 기록이 있는 날만 온다.
+export interface DailyActivity {
+  date: string; // YYYY-MM-DD (KST)
+  total: number; // 그날 기록 수
+  success: number; // 그날 완등 수
+  day_score: number | null; // 하루 점수 (완등 없으면 null)
+}
+
+export async function getMyGradeActivity(days = 182): Promise<DailyActivity[]> {
+  const res = await authFetch(`${API_BASE_URL}/me/grade/activity?days=${days}`);
+  return handleResponse<DailyActivity[]>(res);
+}
+
 // GET /me/grade/timeline : 주별 종합 점수 추이 (인증 필요)
 export async function getMyGradeTimeline(
   weeks = 12,
