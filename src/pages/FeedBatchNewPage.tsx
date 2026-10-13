@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { colorInfo, colorLabel } from "../lib/colorMap";
 import { useUpload } from "../lib/upload";
 import GymPicker from "../components/GymPicker";
+import FollowTargetPicker from "../components/FollowTargetPicker";
 import {
   getSuggestedCategories,
   listGymGradeSystems,
@@ -26,6 +27,11 @@ function formatDateHeader(iso: string): string {
   const [, m, d] = iso.split("-").map(Number);
   const wd = "일월화수목금토"[new Date(iso + "T00:00:00").getDay()];
   return `${m}월 ${d}일 (${wd})`;
+}
+
+function formatSec(sec: number): string {
+  const s = Math.max(0, Math.floor(sec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 // 영상 길이(초). 메타데이터를 못 읽으면 reject.
@@ -78,6 +84,9 @@ export default function FeedBatchNewPage() {
   const [checking, setChecking] = useState(false);
   const [invalidKeys, setInvalidKeys] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  // 들찍 대상 선택 화면은 한 번에 한 카드만 펼친다 — 큰 영상 미리보기를 여러 개
+  // 동시에 디코딩하면 휴대폰 메모리·발열 부담이 커서, 접힌 카드의 피커는 언마운트.
+  const [pickingKey, setPickingKey] = useState<number | null>(null);
 
   const [suggested, setSuggested] = useState<string[]>([]);
   const [gyms, setGyms] = useState<GymGradeSystem[]>([]);
@@ -303,8 +312,13 @@ export default function FeedBatchNewPage() {
                 colors={selectedGym?.color_order ?? null}
                 suggested={suggested}
                 invalid={invalidKeys.has(it.key)}
+                picking={pickingKey === it.key}
+                onPickingChange={(open) => setPickingKey(open ? it.key : null)}
                 onChange={(changes) => patchItem(it.key, changes)}
-                onRemove={() => removeItem(it.key)}
+                onRemove={() => {
+                  if (pickingKey === it.key) setPickingKey(null);
+                  removeItem(it.key);
+                }}
               />
             ))}
           </div>
@@ -375,6 +389,8 @@ function BatchCard({
   colors,
   suggested,
   invalid,
+  picking,
+  onPickingChange,
   onChange,
   onRemove,
 }: {
@@ -384,6 +400,8 @@ function BatchCard({
   colors: string[] | null; // 선택한 암장의 색 순서 (없으면 암장 미선택)
   suggested: string[];
   invalid: boolean;
+  picking: boolean; // 들찍 대상 선택 화면 펼침 여부 (페이지에서 한 카드만)
+  onPickingChange: (open: boolean) => void;
   onChange: (changes: Partial<BatchItem>) => void;
   onRemove: () => void;
 }) {
@@ -566,12 +584,46 @@ function BatchCard({
               ["follow", "들찍 영상"],
             ]}
             value={item.videoMode}
-            onChange={(v) => onChange({ videoMode: v, followTarget: null })}
+            onChange={(v) => {
+              if (v === item.videoMode) return;
+              onChange({ videoMode: v, followTarget: null });
+              // 들찍을 고르면 작성 화면처럼 바로 대상 선택을 펼친다
+              onPickingChange(v === "follow");
+            }}
             small
           />
-          {item.videoMode === "follow" && (
-            <p className="mt-1 text-[11px] text-muted">따라갈 사람은 자동으로 선정돼요.</p>
-          )}
+          {item.videoMode === "follow" &&
+            (picking ? (
+              <div className="mt-2">
+                <FollowTargetPicker
+                  src={item.previewUrl}
+                  target={item.followTarget}
+                  onChange={(t) => onChange({ followTarget: t })}
+                />
+                <button
+                  type="button"
+                  onClick={() => onPickingChange(false)}
+                  className="mt-2 w-full rounded-xl bg-primary-tint py-2 text-[12px] font-bold text-primary"
+                >
+                  선택 완료
+                </button>
+              </div>
+            ) : (
+              <div className="mt-1.5 flex items-center justify-between gap-2">
+                <p className="text-[11px] text-muted">
+                  {item.followTarget
+                    ? `따라갈 사람: ${formatSec(item.followTarget.t)} 장면에서 지정됨`
+                    : "따라갈 사람: 자동 선정"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onPickingChange(true)}
+                  className="shrink-0 text-[11px] font-bold text-primary"
+                >
+                  {item.followTarget ? "다시 지정" : "직접 지정"}
+                </button>
+              </div>
+            ))}
         </div>
       )}
 
