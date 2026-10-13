@@ -29,6 +29,11 @@ const TABS = [
   { to: "/profile", label: "프로필", auth: true, icon: UserIcon },
 ];
 
+// 기록 작성(/feed/new)·일괄 작성(/feed/batch)·수정(/feed/edit/:id) 화면은 바텀시트 스타일로 취급.
+function isSheetPath(path: string): boolean {
+  return path === "/feed/new" || path === "/feed/batch" || path.startsWith("/feed/edit/");
+}
+
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -108,7 +113,10 @@ export default function AppLayout() {
   // (/profile → /users/:id 리다이렉트 시 이중 애니메이션 방지)
   function screenKey(): string {
     const path = location.pathname;
-    if (path === "/feed/new") return "feed-new";
+    // 작성·일괄 작성·수정 시트는 방문마다 새 key — 고정 key 면 퇴장 애니메이션 중
+    // 다시 들어올 때 AnimatePresence 가 퇴장하던 화면을 입력값 그대로 되살려
+    // 같은 기록이 중복 게시될 수 있었다. 시트 화면은 리다이렉트가 없어 이중 애니메이션 문제 없음.
+    if (isSheetPath(path)) return "sheet-" + location.key;
     // 필터 피드(사용자 게시물)는 별개 화면
     if (/^\/users\/[^/]+\/posts/.test(path)) return "user-posts";
     // 내 프로필(/profile 또는 /users/:id)은 하나의 화면으로
@@ -181,11 +189,7 @@ export default function AppLayout() {
 
   const activeIdx = currentIndex();
 
-  // 기록 작성(/feed/new)·일괄 작성(/feed/batch)·수정(/feed/edit/:id) 화면은 바텀시트 스타일로 취급.
-  const isSheet =
-    location.pathname === "/feed/new" ||
-    location.pathname === "/feed/batch" ||
-    location.pathname.startsWith("/feed/edit/");
+  const isSheet = isSheetPath(location.pathname);
 
   return (
     <div className="min-h-screen bg-segment">

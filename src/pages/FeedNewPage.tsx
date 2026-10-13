@@ -302,7 +302,7 @@ export default function FeedNewPage() {
           ? { video_mode: "follow" as const, follow_target: followTarget }
           : {}),
       });
-      navigate("/feed");
+      navigate("/feed", { replace: true }); // 제출한 폼을 히스토리에서 덮어씀 — 뒤로가기로 되살려 중복 게시 방지
       return;
     }
 
@@ -319,7 +319,7 @@ export default function FeedNewPage() {
       } else {
         await createClimbingLog(payload);
       }
-      navigate("/feed");
+      navigate("/feed", { replace: true });
     } catch (err) {
       setError(
         err instanceof ApiError

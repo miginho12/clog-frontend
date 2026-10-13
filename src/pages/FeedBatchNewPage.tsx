@@ -235,7 +235,7 @@ export default function FeedBatchNewPage() {
         return { file: it.file, payload };
       }),
     );
-    navigate("/feed");
+    navigate("/feed", { replace: true }); // 제출한 폼을 히스토리에서 덮어씀 — 뒤로가기로 되살려 중복 게시 방지
   }
 
   return (
