@@ -161,13 +161,16 @@ export default function FeedPage() {
   const startLoaded = !!startId && logs.some((l) => l.id === startId);
   useEffect(() => {
     if (!startId || scrolledTo === startId || startLoaded || !loaded || loading || error) return;
-    if (hasNext && page < MAX_SEEK_PAGES) {
-      void loadPage(page + 1);
-      return;
-    }
-    // 끝까지 찾았는데 없음 — 삭제됐거나 볼 수 없는 게시물
-    setScrolledTo(startId);
-    setToast("게시물을 찾지 못했어요");
+    // 상태 변경은 효과 본문 밖에서 (react-hooks/set-state-in-effect — 아래 암장 효과와 같은 방식)
+    queueMicrotask(() => {
+      if (hasNext && page < MAX_SEEK_PAGES) {
+        void loadPage(page + 1);
+        return;
+      }
+      // 끝까지 찾았는데 없음 — 삭제됐거나 볼 수 없는 게시물
+      setScrolledTo(startId);
+      setToast("게시물을 찾지 못했어요");
+    });
   }, [startId, scrolledTo, startLoaded, loaded, loading, error, hasNext, page, loadPage]);
   // 찾는 동안엔 목록 맨 위가 잠깐 보였다가 튀지 않게 가린다
   const seeking = !!startId && scrolledTo !== startId && !error;
