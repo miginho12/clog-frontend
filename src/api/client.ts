@@ -524,6 +524,33 @@ export async function getMyGradeActivity(days = 182): Promise<DailyActivity[]> {
   return handleResponse<DailyActivity[]>(res);
 }
 
+// GET /me/grade/gyms : 암장별 내 수준 (인증 필요)
+// 가 본 암장 = 실제 최고 완등 색·그 암장 기록만의 진척도, 안 가 본 암장 = 보정치 기반 추정
+export interface GymLevel {
+  gym_name: string;
+  brand_name: string | null;
+  color_order: string[];
+  difficulty_offset: number;
+  visited: boolean;
+  record_count: number;
+  recent_count: number; // 최근 90일 기록 수
+  last_climbed_at: string | null; // YYYY-MM-DD
+  top_label: string | null; // 이 암장 실제 최고 완등 색
+  next_grade_label: string | null;
+  readiness_pct: number | null;
+  estimated_top_label: string | null; // 다른 암장 완등을 보정치로 환산한 추정
+}
+
+export interface MyGymLevels {
+  default_base_gym: string | null; // 최근 90일 가장 많이 기록한 암장
+  gyms: GymLevel[]; // 가 본 암장(최근 많은 순) → 안 가 본 공식 암장(이름순)
+}
+
+export async function getMyGymLevels(): Promise<MyGymLevels> {
+  const res = await authFetch(`${API_BASE_URL}/me/grade/gyms`);
+  return handleResponse<MyGymLevels>(res);
+}
+
 // GET /me/grade/timeline : 주별 종합 점수 추이 (인증 필요)
 export async function getMyGradeTimeline(
   weeks = 12,

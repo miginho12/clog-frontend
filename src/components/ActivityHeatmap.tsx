@@ -7,7 +7,7 @@ interface Props {
   weeks?: number;
 }
 
-// 꾸준함 잔디 (GitHub contribution 그래프 방식, ADR-068).
+// 클라이밍 기록 잔디 (GitHub contribution 그래프 방식, ADR-068).
 // 칸 색 = 그날 기록 수(운동량) — 점수는 성장 추이 차트가 맡고, 여기는 "얼마나 꾸준히" 만.
 // 순차 팔레트: 단일 보라 4단계, 밝은 끝이 흰 배경 대비 2:1 이상 (dataviz 검증 통과).
 // 기록 없는 날은 램프와 별개의 바탕색 — "0" 이 아니라 "없음".
@@ -89,7 +89,7 @@ export default function ActivityHeatmap({ data, weeks = 26 }: Props) {
 
   return (
     <div className="rounded-card bg-white p-5 shadow-card">
-      <h3 className="text-sm font-bold text-title">꾸준함</h3>
+      <h3 className="text-sm font-bold text-title">클라이밍 기록</h3>
       <p className="mb-3 mt-0.5 text-xs text-muted">
         최근 {Math.round(weeks / 4.345)}개월 운동 <span className="font-bold text-title">{activeDays}일</span>
         {streak > 0 && (
