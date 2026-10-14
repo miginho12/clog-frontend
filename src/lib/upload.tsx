@@ -70,7 +70,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const uploadOne = useCallback(
     async (item: UploadItem) => {
       const onProgress = (pct: number) => patch(item.id, { progress: pct });
-      // 큰 영상은 분할 업로드(Cloudflare 요청당 100MB 한도), 나머지는 기존 단일 PUT.
+      // 영상은 분할 업로드(긴 단일 요청이 와이파이 등에서 끊김 — multipartUpload.ts 참고), 사진은 단일 PUT.
       // 분할 업로드는 실패해도 이어 올리기 기록이 남아, retry 시 빠진 조각만 올린다.
       let uploaded: { public_url: string; category: string };
       if (shouldUseMultipart(item.file)) {

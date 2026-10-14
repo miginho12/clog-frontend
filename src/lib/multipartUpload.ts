@@ -1,6 +1,11 @@
-// 큰 영상의 분할(multipart) 업로드 — 조각 나누기·동시 업로드·재시도·이어 올리기.
+// 영상 분할(multipart) 업로드 — 조각 나누기·동시 업로드·재시도·이어 올리기.
 //
-// 왜: Cloudflare 가 요청 1건당 100MB 를 넘으면 413 으로 끊는다(2026-10-13 실측 99MB 통과 / 101MB 413).
+// 왜: 영상은 크기와 상관없이 전부 분할로 올린다.
+// - Cloudflare 가 요청 1건당 100MB 를 넘으면 413 으로 끊는다(2026-10-13 실측 99MB 통과 / 101MB 413).
+// - 2026-10-14: 폰 + 집 와이파이에서 Cloudflare 경유 단일 PUT 이 크기와 무관하게 시작 후 35~40초에
+//   끊겼다(68·74·173MB, nginx 400 + cloudflared "context canceled"). 같은 파일이 모바일 데이터·
+//   서버(curl, Chromium)에선 90초 넘게 걸려도 성공 → 클라이언트 쪽 네트워크 문제라 서버에서 못 고친다.
+//   16MiB 조각은 같은 와이파이에서도 항상 성공했고, 조각마다 재시도·이어 올리기도 붙는다.
 // 서버(/media/multipart/*)가 조각별 presigned URL 을 주고, 다 올라오면 조각 개수·크기를 검증해
 // 합친다 — 하나라도 빠지거나 잘리면 합치기가 거부돼 깨진 영상이 게시되지 않는다.
 import {
@@ -13,16 +18,14 @@ import {
   type MultipartRef,
 } from "../api/client";
 
-// 이보다 큰 영상만 분할 — Cloudflare 100MB 한도에 여유를 둔 값.
-// 그 이하는 검증된 기존 단일 PUT 경로를 그대로 쓴다.
-export const MULTIPART_THRESHOLD = 90 * 1024 * 1024;
 const CONCURRENCY = 3;
 const MAX_ATTEMPTS = 3; // 조각당 시도 횟수 (1 + 재시도 2)
 const RESUME_TTL_MS = 24 * 60 * 60 * 1000;
 const STORE_PREFIX = "clog_multipart:";
 
-export function shouldUseMultipart(file: File): boolean {
-  return file.type.startsWith("video/") && file.size > MULTIPART_THRESHOLD;
+// 영상은 전부 분할, 사진은 작아서 단일 PUT (서버도 분할은 영상만 허용).
+export function shouldUseMultipart(file: Pick<File, "type">): boolean {
+  return file.type.startsWith("video/");
 }
 
 // ── 이어 올리기 기록 (localStorage) ──

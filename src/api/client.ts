@@ -951,7 +951,7 @@ export async function uploadToPresigned(
 }
 
 // ── 분할(multipart) 업로드 ──
-// Cloudflare 가 요청 1건당 100MB 를 넘으면 413 으로 끊어, 큰 영상은 조각으로 올린다.
+// 영상은 크기와 상관없이 조각으로 올린다 (긴 단일 요청이 끊기는 문제 — lib/multipartUpload.ts 참고).
 // 흐름: init → 조각별 presigned URL 로 PUT → (끊기면 status 로 빠진 조각만) → complete.
 // 업로드 순서 제어(동시성·재시도·이어 올리기)는 lib/multipartUpload.ts.
 
