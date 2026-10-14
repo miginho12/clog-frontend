@@ -21,6 +21,10 @@ import CommentBottomSheet from "../components/CommentBottomSheet";
 import GymRankingPanel from "../components/GymRankingPanel";
 
 const PAGE_SIZE = 20;
+// ?start= 게시물이 아직 안 불러온 페이지에 있으면 찾을 때까지 다음 페이지를 이어서 불러온다.
+// 프로필 그리드는 내 게시물 전체를 보여주므로 21번째 이후를 누르면 첫 페이지에 없다.
+// 상한 = 25페이지(500개) — 그래도 없으면(삭제·비공개 전환 등) 안내 후 맨 위에 둔다.
+const MAX_SEEK_PAGES = 25;
 
 export default function FeedPage() {
   const navigate = useNavigate();
@@ -55,13 +59,18 @@ export default function FeedPage() {
   const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false); // 첫 페이지 응답을 받았는지 (찾기 판단 기준)
   const [sheetLogId, setSheetLogId] = useState<string | null>(null);
   const [siblingBranches, setSiblingBranches] = useState<GymGradeSystem[]>([]);
   const [myGymSystem, setMyGymSystem] = useState<GymGradeSystem | null>(null);
   const [showRanking, setShowRanking] = useState(false);
 
+  // 가장 최근 요청의 응답만 반영 — 늦게 온 이전 응답(예: 1페이지)이 이어 불러온 목록을 덮어쓰면
+  // ?start= 찾기가 처음부터 다시 돈다
+  const reqSeq = useRef(0);
   const loadPage = useCallback(
     async (p: number) => {
+      const seq = ++reqSeq.current;
       setLoading(true);
       setError(null);
       try {
@@ -72,17 +81,20 @@ export default function FeedPage() {
           gym_name: gymName,
           category: tag,
         });
+        if (seq !== reqSeq.current) return;
         setLogs((prev) => (p === 1 ? res.items : [...prev, ...res.items]));
         setHasNext(res.has_next);
         setPage(res.page);
+        setLoaded(true);
       } catch (err) {
+        if (seq !== reqSeq.current) return;
         if (err instanceof ApiError && err.status === 401) {
           navigate("/login");
         } else {
           setError("피드를 불러오지 못했습니다");
         }
       } finally {
-        setLoading(false);
+        if (seq === reqSeq.current) setLoading(false);
       }
     },
     [navigate, userId, gymName, tag],
@@ -144,6 +156,21 @@ export default function FeedPage() {
       cancelled = true;
     };
   }, [gymName]);
+
+  // ?start= 게시물이 불러온 목록에 없으면 다음 페이지를 이어서 불러온다 (찾으면 아래 효과가 이동).
+  const startLoaded = !!startId && logs.some((l) => l.id === startId);
+  useEffect(() => {
+    if (!startId || scrolledTo === startId || startLoaded || !loaded || loading || error) return;
+    if (hasNext && page < MAX_SEEK_PAGES) {
+      void loadPage(page + 1);
+      return;
+    }
+    // 끝까지 찾았는데 없음 — 삭제됐거나 볼 수 없는 게시물
+    setScrolledTo(startId);
+    setToast("게시물을 찾지 못했어요");
+  }, [startId, scrolledTo, startLoaded, loaded, loading, error, hasNext, page, loadPage]);
+  // 찾는 동안엔 목록 맨 위가 잠깐 보였다가 튀지 않게 가린다
+  const seeking = !!startId && scrolledTo !== startId && !error;
 
   // ?start=:postId 로 진입 시, 해당 카드로 즉시 이동 (움직임 안 보이게).
   // 이미지/영상 로드로 레이아웃이 밀리므로, 로드 후 재보정을 여러 번 시도.
@@ -248,6 +275,12 @@ export default function FeedPage() {
           >
             + 첫 기록 남기기
           </Link>
+        </div>
+      )}
+
+      {seeking && logs.length > 0 && (
+        <div className="bg-page-gradient fixed inset-0 z-40 flex items-center justify-center">
+          <p className="text-sm text-muted">게시물로 이동 중…</p>
         </div>
       )}
 

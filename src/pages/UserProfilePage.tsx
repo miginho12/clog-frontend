@@ -113,12 +113,20 @@ export default function UserProfilePage() {
         if (!mine && p.is_public === false) {
           setLogs([]);
         } else {
-          const res = await listClimbingLogs({
-            author_id: userId,
-            page_size: 50,
-          });
-          if (cancelled) return;
-          setLogs(res.items);
+          // 게시물 전부 (50개씩 이어서) — 예전엔 첫 50개만 불러와 51번째부터 그리드에
+          // 안 보이고 게시물 수도 50에서 멈췄다. 상한 20페이지(1,000개)
+          const all: ClimbingLog[] = [];
+          for (let page = 1; page <= 20; page++) {
+            const res = await listClimbingLogs({
+              author_id: userId,
+              page,
+              page_size: 50,
+            });
+            if (cancelled) return;
+            all.push(...res.items);
+            setLogs([...all]); // 첫 페이지부터 바로 보이게
+            if (!res.has_next) break;
+          }
         }
 
         // 팔로워/팔로잉 카운트 + 내 팔로우 여부
