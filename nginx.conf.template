@@ -24,6 +24,19 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # ── 내부 전용 경로 차단 (2026-11-09, 감사 H2) ──
+    # 공개 진입점은 cloudflared(climb-log.com) → 이 nginx 하나뿐이라 여기서 막으면 충분하다.
+    # Prometheus 는 Service 로 백엔드 /metrics 를 직접 스크레이프하므로 영향 없음.
+    # - /api/metrics : 내부 엔드포인트 경로·호출량·런타임 정보 노출 (184KB 가 공개돼 있었음)
+    #   ^~ = 정규식 location 보다 먼저 확정, /api/metrics/... 변형도 함께 차단
+    # - /api/ (루트) : environment·문서 경로 안내 노출, 프론트는 호출하지 않음
+    location ^~ /api/metrics {
+        return 404;
+    }
+    location = /api/ {
+        return 404;
+    }
+
     # ── API 프록시 (방식 A: /api 접두어 제거) ──
     # /api/auth/signup → 백엔드 /auth/signup
     location /api/ {
