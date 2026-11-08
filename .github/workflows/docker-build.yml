@@ -41,11 +41,14 @@ jobs:
           import json
           with open('audit.json') as f:
               data = json.load(f)
-          # GHSA-qwww-vcr4-c8h2: react-router RSC Mode CSRF 우회 — 이 앱은
-          # BrowserRouter 기반 순수 SPA라 RSC 모드 자체를 안 써 실질 위험 없음.
-          # npm에 8.x 미출시라 유일한 '수정'이 7.11.0 다운그레이드(breaking)뿐이라
-          # 보류(2026-07-27 확인).
-          ALLOWED = {'GHSA-qwww-vcr4-c8h2'}
+          # GHSA-g3hv-75wg-m249: minimatch 7.0.0~11.0.0 globparts 증폭 DoS.
+          # eslint 10.14 / typescript-eslint 8.72 가 minimatch ^10 에 고정돼 있어
+          # 범위 내 수정이 없고, npm 제안은 eslint 9 다운그레이드(breaking)뿐.
+          # 개발 도구 전용(번들 미포함)이고 패턴은 우리 eslint 설정에서만 와
+          # 외부 입력이 닿지 않음 → 예외 처리(2026-11-09). eslint 가 minimatch 11+
+          # 로 올라가면 Dependabot 갱신과 함께 이 예외를 지울 것.
+          # (2026-11-09 삭제: GHSA-qwww-vcr4-c8h2 react-router — 업데이트로 해소)
+          ALLOWED = {'GHSA-g3hv-75wg-m249'}
           vulns = data.get('vulnerabilities', {})
           unexpected = []
           for name, v in vulns.items():
