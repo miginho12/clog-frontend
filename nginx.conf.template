@@ -24,6 +24,16 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # ── 실제 클라이언트 IP 복원 (2026-11-09, 감사 H3) ──
+    # 경로: 사용자 → Cloudflare → cloudflared Pod → 이 nginx → backend.
+    # $remote_addr 는 cloudflared Pod IP 라, 그대로 넘기면 backend rate limit 이
+    # 비로그인 사용자 전원을 한 버킷으로 셌다. Cloudflare 가 덮어쓰는 CF-Connecting-IP 를
+    # 클러스터 내부(10.42.0.0/16 = k3s cluster-cidr) 피어에게서 온 경우에만 신뢰한다.
+    # 한계: LAN 에서 NodePort 로 직접 오면 kube-proxy SNAT 로 피어가 노드 IP(10.42.0.1)가
+    #       되어 헤더 위조가 가능 — 집 LAN 은 위협 모델 밖으로 둠(사용자 결정, A안).
+    set_real_ip_from 10.42.0.0/16;
+    real_ip_header CF-Connecting-IP;
+
     # ── 내부 전용 경로 차단 (2026-11-09, 감사 H2) ──
     # 공개 진입점은 cloudflared(climb-log.com) → 이 nginx 하나뿐이라 여기서 막으면 충분하다.
     # Prometheus 는 Service 로 백엔드 /metrics 를 직접 스크레이프하므로 영향 없음.
@@ -45,7 +55,8 @@ server {
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # 덧붙이지(append) 않고 복원된 IP 하나로 덮어씀 — 클라이언트가 보낸 XFF 위조 차단 (H3)
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
 
         # 타임아웃
@@ -68,7 +79,8 @@ server {
         proxy_pass http://minio.dev.svc.cluster.local:9000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # 덧붙이지(append) 않고 복원된 IP 하나로 덮어씀 — 클라이언트가 보낸 XFF 위조 차단 (H3)
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         # 업로드(원본 영상) 대비 바디 크기/타임아웃 상향
         # 원본은 압축 파이프라인이 처리 후 삭제 → 500m 상한
