@@ -24,6 +24,9 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # ── 보안 응답 헤더 (감사 M3) — add_header 없는 location(/api/·/clog-media)은 이걸 상속 ──
+    include /etc/nginx/snippets/security-headers.conf;
+
     # ── 실제 클라이언트 IP 복원 (2026-11-09, 감사 H3) ──
     # 경로: 사용자 → Cloudflare → cloudflared Pod → 이 nginx → backend.
     # $remote_addr 는 cloudflared Pod IP 라, 그대로 넘기면 backend rate limit 이
@@ -113,6 +116,7 @@ server {
     # `/` 는 index 지시어로, SPA 경로는 try_files 로 내부 이동해 모두 이 location 을 탄다.
     location = /index.html {
         add_header Cache-Control "no-cache";
+        include /etc/nginx/snippets/security-headers.conf;  # add_header 상속 끊김 보완 (M3)
     }
 
     # ── SPA history fallback ──
@@ -121,12 +125,14 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
         add_header Cache-Control "no-cache";
+        include /etc/nginx/snippets/security-headers.conf;  # add_header 상속 끊김 보완 (M3)
     }
 
     # ── 정적 자산 캐싱 ──
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        include /etc/nginx/snippets/security-headers.conf;  # add_header 상속 끊김 보완 (M3)
     }
 
     # ── health check (k8s probe 용) ──

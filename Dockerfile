@@ -35,6 +35,8 @@ FROM nginx:1.27-alpine AS runtime
 # 안 하면 nginx 자체 변수($host, $request_uri 등)까지 envsubst가 지워버린다.
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf.template /etc/nginx/templates/clog.conf.template
+# 보안 헤더 스니펫 (감사 M3) — server 와 add_header 를 가진 location 에서 include
+COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 ENV NGINX_ENVSUBST_FILTER=^CLOG_
 ENV CLOG_BACKEND_HOST=clog-dev
 
