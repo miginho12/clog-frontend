@@ -11,12 +11,13 @@ import {
   getUserStats,
   followUser,
   unfollowUser,
+  logout,
   ApiError,
   type ClimbingLog,
   type PublicUser,
   type ProfileStats,
 } from "../api/client";
-import { clearTokens, isAuthenticated } from "../lib/auth";
+import { isAuthenticated } from "../lib/auth";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { countFollowRequests } from "../api/client";
 import PostGrid from "../components/PostGrid";
@@ -218,8 +219,8 @@ export default function UserProfilePage() {
     }
   }
 
-  function handleLogout() {
-    clearTokens();
+  async function handleLogout() {
+    await logout(); // 서버 refresh 폐기 후 로컬 삭제 (M13)
     navigate("/login");
   }
 

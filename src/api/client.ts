@@ -274,6 +274,28 @@ export async function changePassword(input: {
   if (!res.ok) return handleResponse<void>(res);
 }
 
+// ── 로그아웃 (POST /auth/logout) — 204 ──
+// 서버의 refresh 를 폐기한 뒤 로컬 토큰 삭제 (감사 M13, 2026-11-09). 이전엔 로컬만 지워
+// 서버 refresh 가 로그아웃 후에도 7일 유효했다(탈취 토큰을 로그아웃으로 못 막음).
+// 네트워크 실패·이미 무효한 토큰이어도 로컬 토큰은 반드시 지운다 — 사용자는 로그아웃돼야 한다.
+export async function logout(): Promise<void> {
+  const refresh = getRefreshToken();
+  try {
+    if (refresh) {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refresh }),
+        signal: AbortSignal.timeout(5000), // 서버가 느려도 로그아웃 버튼이 멈추지 않게
+      });
+    }
+  } catch {
+    // 무시 — 아래에서 로컬 토큰은 지운다
+  } finally {
+    clearTokens();
+  }
+}
+
 // ── 회원 탈퇴 (DELETE /users/me) — 204 ──
 export async function deleteAccount(): Promise<void> {
   const res = await authFetch(`${API_BASE_URL}/users/me`, {
