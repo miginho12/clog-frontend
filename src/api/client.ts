@@ -49,18 +49,29 @@ async function doRefresh(): Promise<string> {
   }
   const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      // refresh token 회전 지원 신호 (감사 M2, 2026-11-09) — 백엔드는 이 헤더가 있는
+      // 클라이언트에만 새 refresh 를 준다(새 refresh 를 저장하지 않는 옛 앱 보호).
+      "X-Clog-Refresh-Rotation": "1",
+    },
     body: JSON.stringify({ refresh_token: refresh }),
   });
   if (!res.ok) {
+    // 다른 탭이 그사이 회전해 저장소의 refresh 가 바뀌었으면, 내 요청이 옛 토큰이라 거절된 것
+    // → 로그아웃하지 말고 그 탭이 받은 토큰을 쓴다 (single-flight 는 탭 안에서만 유효)
+    const latestRefresh = getRefreshToken();
+    const latestAccess = getAccessToken();
+    if (latestRefresh && latestRefresh !== refresh && latestAccess) {
+      return latestAccess;
+    }
     // refresh 자체가 만료/무효 → 재로그인 필요
     clearTokens();
     throw new ApiError(401, "refresh failed", "refresh_failed");
   }
-  const data = (await res.json()) as { access_token: string };
-  // access 만 갱신 (refresh 는 유지)
-  const currentRefresh = getRefreshToken() ?? refresh;
-  saveTokens(data.access_token, currentRefresh);
+  const data = (await res.json()) as { access_token: string; refresh_token?: string };
+  // 회전하는 백엔드면 새 refresh 저장, 아니면(옛 백엔드) 기존 refresh 유지
+  saveTokens(data.access_token, data.refresh_token ?? getRefreshToken() ?? refresh);
   return data.access_token;
 }
 
