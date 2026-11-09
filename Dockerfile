@@ -26,7 +26,7 @@ RUN npm run build
 # ─────────────────────────────────────────
 # Stage 2: 런타임 (nginx)
 # ─────────────────────────────────────────
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 
 # 기본 nginx 설정 제거 후 커스텀 설정을 envsubst 템플릿으로 복사
 # nginx 공식 이미지가 시작 시 /etc/nginx/templates/*.template 을 envsubst 처리해
