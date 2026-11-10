@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import UploadBanner from "./UploadBanner";
+import ErrorBoundary from "./ErrorBoundary";
+import PageFallback from "./PageFallback";
+import { preloadTabPages } from "../pages/lazyPages";
 import {
   NavLink,
   useLocation,
@@ -60,6 +63,16 @@ export default function AppLayout() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // 탭 페이지 청크를 첫 화면 뒤 유휴 시간에 미리 받는다 (감사 M6) — 스와이프 때 로딩 깜빡임 방지.
+  useEffect(() => {
+    const ric = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
+    const id = ric(() => preloadTabPages());
+    return () => {
+      if (window.cancelIdleCallback) window.cancelIdleCallback(id);
+      else window.clearTimeout(id);
+    };
+  }, []);
+
   // 안읽은 알림 개수 (마운트 + 위치 변경 시 + 30초 폴링)
   // 알림 뱃지 자체가 authed && ... 로만 렌더되므로, 비로그인 시엔
   // unreadCount 를 굳이 리셋하지 않아도 화면에 남지 않는다.
@@ -108,6 +121,13 @@ export default function AppLayout() {
     );
     return idx;
   }
+
+  // 페이지 본문: 렌더 오류는 이 영역만 안내 화면으로(탭바 유지, 경로 바뀌면 복구), 지연 로드 중엔 자리 표시 (감사 M6)
+  const page = (
+    <ErrorBoundary variant="page" resetKey={location.pathname}>
+      <Suspense fallback={<PageFallback />}>{outlet}</Suspense>
+    </ErrorBoundary>
+  );
 
   // 애니메이션 key: 리다이렉트로 세부 경로가 바뀌어도 "같은 화면"이면 동일 key.
   // (/profile → /users/:id 리다이렉트 시 이중 애니메이션 방지)
@@ -275,7 +295,7 @@ export default function AppLayout() {
                 transition={TRANSITION_SHEET}
                 className="min-h-full"
               >
-                {outlet}
+                {page}
               </motion.div>
             ) : (
               // 탭(형제 교체)은 좌우 슬라이드, 드릴다운(부모→자식)은 페이드+스케일로
@@ -302,7 +322,7 @@ export default function AppLayout() {
                 transition={isPushTransition ? TRANSITION_PUSH : TRANSITION_TAB}
                 className="min-h-full px-4 py-6 pb-28"
               >
-                {outlet}
+                {page}
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,32 +1,41 @@
+import { Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+// 첫 화면·로그인 흐름은 번들에 포함(즉시), 나머지는 lazyPages 에서 필요할 때 로드 (감사 M6)
 import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import VerifyPage from "./pages/VerifyPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
-import ProfilePage from "./pages/ProfilePage";
-import AccountSettingsPage from "./pages/AccountSettingsPage";
-import FollowRequestsPage from "./pages/FollowRequestsPage";
-import UserProfilePage from "./pages/UserProfilePage";
-import FollowListPage from "./pages/FollowListPage";
 import FeedPage from "./pages/FeedPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import FeedNewPage from "./pages/FeedNewPage";
-import FeedBatchNewPage from "./pages/FeedBatchNewPage";
-import GradePage from "./pages/GradePage";
-import SearchPage from "./pages/SearchPage";
+import {
+  SignupPage,
+  ForgotPasswordPage,
+  VerifyPage,
+  ProfilePage,
+  AccountSettingsPage,
+  FollowRequestsPage,
+  UserProfilePage,
+  FollowListPage,
+  NotificationsPage,
+  FeedNewPage,
+  FeedBatchNewPage,
+  GradePage,
+  SearchPage,
+  AdminPage,
+} from "./pages/lazyPages";
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
-import AdminPage from "./pages/AdminPage";
+import ErrorBoundary from "./components/ErrorBoundary";
+import PageFallback from "./components/PageFallback";
 import { NavDirectionProvider } from "./lib/navDirection";
 import { UploadProvider } from "./lib/upload";
 
 export default function App() {
   return (
+    <ErrorBoundary variant="root">
     <BrowserRouter>
       <NavDirectionProvider>
         <UploadProvider>
+        {/* 레이아웃 밖 화면(가입·비번 찾기 등) 로딩용. 레이아웃 안은 AppLayout 의 Suspense 가 받는다 */}
+        <Suspense fallback={<PageFallback fullScreen />}>
         <Routes>
         {/* 인증 바깥 (전체화면) */}
         <Route path="/login" element={<LoginPage />} />
@@ -148,8 +157,10 @@ export default function App() {
         {/* 그 외 → 피드 */}
         <Route path="*" element={<Navigate to="/feed" replace />} />
         </Routes>
+        </Suspense>
         </UploadProvider>
       </NavDirectionProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
