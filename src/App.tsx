@@ -27,11 +27,19 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PageFallback from "./components/PageFallback";
 import { NavDirectionProvider } from "./lib/navDirection";
 import { UploadProvider } from "./lib/upload";
+import { useAppLoginReturn } from "./lib/appLogin";
+
+// 앱 카카오 로그인 복귀(com.climblog.app://auth/callback) 수신 — Router 안이어야 navigate 가능 (감사 M14)
+function AppLoginReturn() {
+  useAppLoginReturn();
+  return null;
+}
 
 export default function App() {
   return (
     <ErrorBoundary variant="root">
     <BrowserRouter>
+      <AppLoginReturn />
       <NavDirectionProvider>
         <UploadProvider>
         {/* 레이아웃 밖 화면(가입·비번 찾기 등) 로딩용. 레이아웃 안은 AppLayout 의 Suspense 가 받는다 */}

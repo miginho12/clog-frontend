@@ -1,7 +1,9 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate, Link, useLocation, useSearchParams } from "react-router-dom";
+import { Browser } from "@capacitor/browser";
 import { localLogin, kakaoLoginUrl, ApiError } from "../api/client";
 import { saveTokens } from "../lib/auth";
+import { isNativeApp, startKakaoAppLogin } from "../lib/appLogin";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -11,8 +13,43 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
+  // 앱 카카오 로그인 복귀 실패 시 useAppLoginReturn 이 state 로 넘긴 메시지 (감사 M14)
+  const loginError = (location.state as { loginError?: string } | null)?.loginError ?? null;
+  const [error, setError] = useState<string | null>(loginError);
   const [loading, setLoading] = useState(false);
+  const [kakaoOpening, setKakaoOpening] = useState(false);
+
+  // 로그인 화면에서 시작해 같은 /login 으로 돌아오면 다시 마운트되지 않아 위 초기값이 갱신되지
+  // 않는다 → 이동(location.key)이 바뀐 렌더에서 반영 (React 의 "이전 값과 비교해 조정" 패턴)
+  const [seenKey, setSeenKey] = useState(location.key);
+  if (location.key !== seenKey) {
+    setSeenKey(location.key);
+    if (loginError) {
+      setError(loginError);
+      setKakaoOpening(false);
+    }
+  }
+
+  // 앱: 사용자가 로그인 없이 브라우저를 닫으면 버튼을 다시 누를 수 있게
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    const sub = Browser.addListener("browserFinished", () => setKakaoOpening(false));
+    return () => {
+      void sub.then((h) => h.remove());
+    };
+  }, []);
+
+  async function handleKakaoApp() {
+    setError(null);
+    setKakaoOpening(true);
+    try {
+      await startKakaoAppLogin();
+    } catch (e) {
+      setKakaoOpening(false);
+      setError(e instanceof Error ? e.message : "카카오 로그인을 시작하지 못했어요");
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -129,15 +166,28 @@ export default function LoginPage() {
             <span className="h-px flex-1 bg-[#E4DFF0]" />
           </div>
 
-          <a
-            href={kakaoLoginUrl()}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-[#FEE500] py-3.5 transition hover:brightness-95"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#3A2929">
-              <path d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z" />
-            </svg>
-            <span className="text-sm font-bold text-[#3A2929]">카카오로 시작하기</span>
-          </a>
+          {/* 웹: 같은 창에서 이동(기존) / 앱: 시스템 브라우저 + 앱 복귀 (감사 M14) */}
+          {isNativeApp() ? (
+            <button
+              type="button"
+              onClick={handleKakaoApp}
+              disabled={kakaoOpening}
+              className="flex items-center justify-center gap-2 rounded-2xl bg-[#FEE500] py-3.5 transition hover:brightness-95 disabled:opacity-60"
+            >
+              <KakaoIcon />
+              <span className="text-sm font-bold text-[#3A2929]">
+                {kakaoOpening ? "카카오 로그인 진행 중..." : "카카오로 시작하기"}
+              </span>
+            </button>
+          ) : (
+            <a
+              href={kakaoLoginUrl()}
+              className="flex items-center justify-center gap-2 rounded-2xl bg-[#FEE500] py-3.5 transition hover:brightness-95"
+            >
+              <KakaoIcon />
+              <span className="text-sm font-bold text-[#3A2929]">카카오로 시작하기</span>
+            </a>
+          )}
         </form>
 
         <div className="mt-5 flex justify-center gap-3.5 text-[12.5px]">
@@ -151,5 +201,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function KakaoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#3A2929">
+      <path d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z" />
+    </svg>
   );
 }

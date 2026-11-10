@@ -8,16 +8,11 @@ const config: CapacitorConfig = {
   // (iOS는 capacitor://localhost 고정, Android는 https://localhost가 됨)
   server: {
     androidScheme: 'https',
-    // 카카오 로그인은 WebView가 앱 자체 origin(https://localhost) 밖의
-    // kauth.kakao.com 으로 이동해야 하는데, allowNavigation에 없는 도메인으로
-    // 나가면 Capacitor가 기본적으로 시스템 브라우저로 튕겨버린다(2026-07-30
-    // 실기기 테스트에서 발견). 카카오 인증 + 콜백이 돌아오는 climb-log.com
-    // 둘 다 허용해서 전체 로그인 플로우가 앱 안에서 끝나도록 함.
-    allowNavigation: [
-      'kauth.kakao.com',
-      'accounts.kakao.com',
-      'climb-log.com',
-    ],
+    // allowNavigation 없음 (2026-11-11, 감사 M14): 예전엔 카카오 로그인을 WebView 안에서 하려고
+    // kauth/accounts.kakao.com·climb-log.com 을 허용했는데, 콜백 후 WebView 가 원격 사이트
+    // (climb-log.com)에 머물러 번들/원격 코드가 섞이고 토큰이 원격 출처에 저장됐다.
+    // 이제 로그인은 시스템 브라우저(@capacitor/browser) + 커스텀 스킴 복귀(src/lib/appLogin.ts)라
+    // WebView 는 번들 밖으로 나갈 일이 없다.
   },
 };
 

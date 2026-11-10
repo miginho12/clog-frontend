@@ -492,6 +492,36 @@ export function kakaoLoginUrl(): string {
   return `${API_BASE_URL}/auth/kakao/login`;
 }
 
+// ── 앱 카카오 로그인 (감사 M14) ──
+//
+// 앱은 시스템 브라우저로 로그인하고 커스텀 스킴(com.climblog.app://auth/callback?code=)으로
+// 돌아온다. URL 에는 토큰 대신 60초·1회용 코드만 오고, PKCE verifier 로 교환한다.
+
+export interface KakaoAppExchangeResponse extends AuthResponse {
+  is_new_user: boolean;
+}
+
+export function kakaoAppLoginUrl(codeChallenge: string): string {
+  const q = new URLSearchParams({
+    client: "app",
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
+  });
+  return `${API_BASE_URL}/auth/kakao/login?${q.toString()}`;
+}
+
+export async function exchangeKakaoAppCode(
+  code: string,
+  codeVerifier: string,
+): Promise<KakaoAppExchangeResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/kakao/app/exchange`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, code_verifier: codeVerifier }),
+  });
+  return handleResponse<KakaoAppExchangeResponse>(res);
+}
+
 // ── 그레이드 (구현 2~5) ──
 //
 // GET /me/grade?base_gym= : v_scale + color 두 트랙 산정 결과 (인증 필요)
