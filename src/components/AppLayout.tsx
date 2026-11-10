@@ -4,6 +4,9 @@ import UploadBanner from "./UploadBanner";
 import ErrorBoundary from "./ErrorBoundary";
 import PageFallback from "./PageFallback";
 import { preloadTabPages } from "../pages/lazyPages";
+import NewVersionBanner from "./NewVersionBanner";
+import { autoApplyOnce, useNewVersion } from "../lib/versionCheck";
+import { useUpload } from "../lib/upload";
 import {
   NavLink,
   useLocation,
@@ -62,6 +65,20 @@ export default function AppLayout() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  // 새 버전 감지 (감사 M7) — 배너 + 안전한 다음 이동 때 새로고침으로 적용.
+  // 미루는 경우: 업로드 진행 중(새로고침하면 끊김), 작성·수정 시트로 들어가거나 나올 때(입력값 유실).
+  const newVersion = useNewVersion(location.pathname);
+  const { items: uploadItems } = useUpload();
+  const uploading = uploadItems.some((it) => it.phase === "pending" || it.phase === "uploading" || it.phase === "creating");
+  const prevPath = useRef(location.pathname);
+  useEffect(() => {
+    const from = prevPath.current;
+    prevPath.current = location.pathname;
+    if (from === location.pathname || !newVersion || uploading) return;
+    if (isSheetPath(from) || isSheetPath(location.pathname)) return;
+    autoApplyOnce(newVersion); // URL 은 이미 새 경로 → 새로고침하면 새 버전으로 그 화면이 뜬다
+  }, [location.pathname, newVersion, uploading]);
 
   // 탭 페이지 청크를 첫 화면 뒤 유휴 시간에 미리 받는다 (감사 M6) — 스와이프 때 로딩 깜빡임 방지.
   useEffect(() => {
@@ -330,6 +347,7 @@ export default function AppLayout() {
 
         {/* 하단: 업로드 배너 + 플로팅 탭바 */}
         <div className="sticky bottom-0 z-10 pt-2">
+          {newVersion && <NewVersionBanner blocked={uploading} />}
           <UploadBanner />
           <div className="px-5 pb-4">
             <nav className="relative flex items-stretch justify-around rounded-[22px] bg-white/92 shadow-float backdrop-blur-md">
