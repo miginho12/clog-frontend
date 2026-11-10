@@ -79,7 +79,8 @@ server {
     #    적용되어 영상 업로드가 413으로 실패했다 (2026-07-19 발견).
     #    정규식으로 clog-media* 버킷명을 전부 커버하도록 수정.
     location ~ ^/clog-media {
-        proxy_pass http://minio.dev.svc.cluster.local:9000;
+        # MinIO 는 storage 네임스페이스 (2026-11-10, 감사 M4 — dev 네임스페이스에서 이전, dev·prod 공유)
+        proxy_pass http://minio.storage.svc.cluster.local:9000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         # 덧붙이지(append) 않고 복원된 IP 하나로 덮어씀 — 클라이언트가 보낸 XFF 위조 차단 (H3)
