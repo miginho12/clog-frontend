@@ -20,6 +20,10 @@ RUN npm ci
 
 # 소스 복사 후 빌드
 COPY . .
+# 빌드 ID = 커밋 SHA (감사 M7) — 이미지 태그 sha-xxxxxxx·gitops 커밋과 같은 값. CI 가 build-arg 로 넘김.
+# 이 ARG 는 COPY 뒤에 둬서 npm ci 레이어 캐시를 깨지 않는다.
+ARG GIT_SHA=""
+ENV GIT_SHA=$GIT_SHA
 # .env.production 이 자동 적용됨 (VITE_API_BASE_URL=/api)
 RUN npm run build
 
