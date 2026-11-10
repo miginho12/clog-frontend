@@ -22,6 +22,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- 카카오 로그인 복귀 (감사 M14): 시스템 브라우저에서 로그인 후 백엔드가
+                 com.climblog.app://auth/callback?code=… 로 302 → 이 Activity 로 돌아와
+                 @capacitor/app 의 appUrlOpen 으로 전달. singleTask 라 기존 화면을 재사용한다.
+                 URL 엔 토큰이 아닌 60초·1회용 코드만 있고 PKCE verifier 없이는 쓸 수 없다. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.climblog.app" android:host="auth" android:path="/callback" />
+            </intent-filter>
+
         </activity>
 
         <provider
