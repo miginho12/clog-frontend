@@ -20,6 +20,15 @@ updates:
       npm-security:
         applies-to: security-updates
         patterns: ["*"]
+    ignore:
+      # L1 결정(2026-11-11): typescript-eslint 8.72.2 의 peer 가 typescript <6.1
+      # → typescript-eslint 가 7 을 지원하면 ignore 를 지우고 올린다
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # L1 결정(2026-11-11): 빌드·CI 런타임이 Node 24 → 타입도 24 에 맞춘다
+      # → Node 메이저를 올릴 때 함께 올린다
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/"
