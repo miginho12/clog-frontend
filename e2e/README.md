@@ -24,11 +24,14 @@ alias e2epy='uv run -q --no-project --with playwright python'
 | `kakao_web.py` | 4 — 웹 카카오 링크 그대로·앱 전용 버튼 없음·링크 → 카카오 302·페이지 오류 없음 | 배포된 frontend | `e2epy e2e/kakao_web.py https://climb-log.com` |
 | `api_probe.sh` | 7 — 카카오 로그인 302(웹·앱)·PKCE challenge/verifier 검증 422·가짜 코드 401·앱 출처 CORS | 배포된 backend API | `e2e/api_probe.sh https://climb-log.com/api` |
 | `app_login.py` | 17 — 앱 카카오 로그인(실제 Capacitor native-bridge + 가짜 Android 브리지·가짜 API): 시스템 브라우저 열기·PKCE·복귀 교환·중복/만료/실패·콜드 스타트 + 웹 회귀 2 | 로컬 웹 빌드 | `npm run build && e2epy e2e/app_login.py` |
+| `csp_enforce.py` | 4 — nginx `security-headers.conf` 의 CSP 를 **강제**로 붙여 탭 순회: 위반 0·화면 전환용 빈 `<style>` 실행·막히지 않음·페이지 오류 없음 | 로컬 웹 빌드 | `npm run build && e2epy e2e/csp_enforce.py` |
 | `rollout_probe.sh` | 롤아웃 중 응답 코드 분포, 200 아닌 응답이 있으면 실패 | 실행 중 환경 + kubectl | 아래 |
 
 - dev 주소: frontend `http://localhost:30081`, backend `http://localhost:30080` (prod Service 직결은 `http://localhost:30082`)
 - `api_probe.sh` 를 dev backend 에 돌리면 7번(CORS)만 실패한다 — dev 의 `CORS_ORIGINS`(gitops `values-dev.yaml`)에 앱 출처
   `https://localhost` 가 없다. 앱은 prod API 만 부르므로 현재는 정상(prod 는 기본값에 포함).
+- `csp_enforce.py` 는 framer-motion·React 를 올리거나 CSP 를 고칠 때 돌린다. `CSP_OVERRIDE='<정책>'` 로 대조 실험
+  (빈 해시를 뺀 정책은 C1·C3 이 실패해야 정상 — 2026-11-12 확인).
 - `app_login.py` 는 **웹 빌드**로 돌린다. `build:mobile` 은 API 주소가 절대 경로라 W1(웹 링크 상대 경로)만 실패한다.
 
 ### rollout_probe.sh — 무중단 확인
