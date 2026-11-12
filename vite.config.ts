@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -30,6 +31,15 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), versionJson()],
   define: {
     __APP_BUILD_ID__: JSON.stringify(BUILD_ID),
+  },
+  // 단위 테스트 (감사 L2, 2026-11-12) — 브라우저 API(localStorage·fetch·location)를 쓰는 로직이라 jsdom.
+  // 테스트는 src/**/*.test.ts(x), 화면 렌더 테스트는 범위 밖(핵심 로직만).
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.test.{ts,tsx}'],
+    restoreMocks: true,
+    unstubGlobals: true,
+    unstubEnvs: true,
   },
   server: {
     port: 5173,

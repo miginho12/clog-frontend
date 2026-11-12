@@ -39,6 +39,10 @@ jobs:
       - name: Type check (tsc)
         run: npx tsc -b --noEmit
 
+      # 단위 테스트 (감사 L2, 2026-11-12) — 토큰 갱신·새 버전 감지·청크 새로고침·분할 업로드
+      - name: Unit tests (vitest)
+        run: npm test
+
       - name: Security audit (npm audit)
         run: |
           npm audit --json > audit.json || true

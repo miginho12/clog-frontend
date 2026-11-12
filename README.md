@@ -105,6 +105,7 @@ API는 `.env.development`의 `VITE_API_BASE_URL`(기본 `http://localhost:8080`)
 
 ```bash
 npm run lint         # eslint
+npm test             # vitest 단위 테스트 (src/**/*.test.ts — 토큰 갱신·버전 감지·청크 새로고침·분할 업로드)
 npm run build        # tsc -b && vite build (커밋 전 필수)
 npm run cap:sync     # 모바일 빌드 후 Capacitor 동기화
 ```
