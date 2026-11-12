@@ -6,6 +6,7 @@
 framer-motion·React 를 올리거나 CSP 를 고칠 때 돌린다.
 
 사용: npm run build && uv run --no-project --with playwright python e2e/csp_enforce.py [dist]
+  C5: 카카오 프로필(DB 에 http://k.kakaocdn.net 으로 저장)이 CSP 에 막히지 않는지
   CSP_OVERRIDE='<정책>' 을 주면 그 정책으로 시험한다(대조 실험 — 예: 빈 해시를 뺀 정책은 실패해야 정상).
 API 는 Playwright 가 가로채 가짜로 응답한다(서버 없이, 실제 데이터 무관).
 """
@@ -117,6 +118,16 @@ with sync_playwright() as p:
     check("C2 화면 전환이 빈 <style> 을 실제로 사용(popLayout 경로 실행됨)", st["total"] > 0, f"{st['total']}개")
     check("C3 빈 <style> 이 막히지 않음(sheet 살아 있음)", st["total"] > 0 and st["nullSheet"] == 0, f"null {st['nullSheet']}/{st['total']}")
     check("C4 페이지 오류 없음", not errs, "; ".join(errs)[:200])
+
+    # 카카오 프로필: DB 에 http 로 저장된 주소 + https 주소 둘 다 CSP 를 통과해야 한다(요청은 가짜 응답, 외부 호출 없음)
+    PNG = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+                        "1f15c4890000000d49444154789c6300010000000500010d0a2db40000000049454e44ae426082")
+    ctx.route("**/*.kakaocdn.net/**", lambda r: r.fulfill(status=200, content_type="image/png", body=PNG))
+    pg.evaluate("window.__v = []")
+    res = pg.evaluate("""() => Promise.all(['http://k.kakaocdn.net/dn/e2e/a.png', 'https://k.kakaocdn.net/dn/e2e/b.png'].map(u =>
+        new Promise(ok => { const i = new Image(); i.onload = () => ok('load'); i.onerror = () => ok('error'); i.src = u; })))""")
+    v = pg.evaluate("window.__v")
+    check("C5 카카오 프로필 http·https 이미지 허용", res == ["load", "load"] and not v, f"{res} {'; '.join(v)[:120]}")
     b.close()
 
 finish()
