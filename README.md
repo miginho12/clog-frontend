@@ -110,6 +110,8 @@ npm run build        # tsc -b && vite build (커밋 전 필수)
 npm run cap:sync     # 모바일 빌드 후 Capacitor 동기화
 ```
 
+실환경(dev·prod)·로컬 빌드에 붙이는 점검(배포 스모크·카카오 로그인·무중단 측정)은 [`e2e/`](e2e/README.md) — CI 밖, 승격 때 수동.
+
 ---
 
 ## 📦 배포 흐름
