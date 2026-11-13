@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/miginho12/clog-frontend/compare/v1.1.0...v1.1.1) (2026-11-12)
+
+
+### 버그 수정
+
+* **security:** CSP img-src 카카오를 https 만으로 되돌림 — backend https 정리 후 ([661f4ad](https://github.com/miginho12/clog-frontend/commit/661f4ad711b2e5951552bc6e5187ed734a9f6987))
+
 ## [1.1.0](https://github.com/miginho12/clog-frontend/compare/v1.0.0...v1.1.0) (2026-11-12)
 
 
