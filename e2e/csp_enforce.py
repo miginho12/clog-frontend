@@ -120,7 +120,8 @@ with sync_playwright() as p:
     check("C4 페이지 오류 없음", not errs, "; ".join(errs)[:200])
 
     # 카카오 프로필: https 는 통과, http 는 막혀야 한다(DB 는 https 만 — backend secure_resource + 마이그레이션
-    # 6a4fc0e704e9). 요청은 가짜 응답, 외부 호출 없음
+    # 6a4fc0e704e9). 이 서버는 http 페이지라 mixed content 업그레이드가 없어 정책 문자열 그대로를 본다
+    # (https 페이지의 Chromium 강제 CSP 는 업그레이드 뒤 통과 — security-headers.conf 주석). 요청은 가짜 응답
     PNG = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
                         "1f15c4890000000d49444154789c6300010000000500010d0a2db40000000049454e44ae426082")
     ctx.route("**/*.kakaocdn.net/**", lambda r: r.fulfill(status=200, content_type="image/png", body=PNG))
