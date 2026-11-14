@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 // 배포 후에도 열린 탭·앱(WebView)은 옛 번들로 계속 돈다. 서버의 /version.json(빌드마다 다른 ID)을
 // 주기적으로 확인해, 내 빌드 ID 와 다르면 "새 버전 있음" 상태가 된다.
 // - 확인 시점: 처음 10초 뒤 · 화면 복귀(visibilitychange) · 5분마다 · 경로 이동(1분에 최대 1회)
-// - 반영: AppLayout 이 배너를 띄우고, 안전한 다음 이동 때 새로고침으로 적용(shouldAutoApply)
+// - 반영: AppLayout 이 배너를 띄우고, 안전한 다음 이동 때 새로고침으로 적용(autoApplyOnce — 서버 빌드당 한 번)
 // - 앱 번들(https://localhost)·개발 서버(localhost)에선 끈다 — 서버와 비교할 대상이 다르다.
 
 export const CURRENT_BUILD_ID = __APP_BUILD_ID__;

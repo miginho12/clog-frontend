@@ -52,7 +52,7 @@ export default function App() {
         <Route path="/verify" element={<VerifyPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-        {/* 공통 레이아웃 셸 (비회원도 접근 — 피드/상세는 공개) */}
+        {/* 공통 레이아웃 셸 (비회원도 접근 — 피드는 공개) */}
         <Route element={<AppLayout />}>
           {/* 공개: 피드 보기 */}
           <Route path="/feed" element={<FeedPage />} />
@@ -90,7 +90,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* 공개: 게시물 상세 (비로그인도 공개글 조회 가능) */}
           <Route
             path="/me/grade"
             element={
